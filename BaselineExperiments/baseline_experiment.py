@@ -59,5 +59,4 @@ with open(hist_csv_file, mode='w') as f:
 prediction = model.predict(X_test)
 
 np.save("test_predictions.npy",prediction)
-np.save("test_data.npy",X_test)
 np.save('test_labels.npy',y_test)
