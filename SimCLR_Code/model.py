@@ -4,21 +4,20 @@ from pytorch_metric_learning.losses import NTXentLoss
 import torchvision.transforms as transforms
 import torch
 import torch.nn as nn
+import numpy as np
 from pytorch_lightning import LightningModule
+from sklearn.metrics import (accuracy_score,f1_score,auc,precision_recall_curve,roc_curve)
 
+transforms_dict = {'hflip':transforms.RandomHorizontalFlip(),
+                   'crop+resize': transforms.RandomResizedCrop(size=96),
+                   'colorjitter': transforms.RandomApply([transforms.ColorJitter(brightness=0.5,
+                                                                                 contrast=0.5,
+                                                                                 saturation=0.5,
+                                                                                 hue=0.1)], p=0.8),
+                   'gray': transforms.RandomGrayscale(p=0.2),
+                   'blur': transforms.GaussianBlur(kernel_size=9)}
 
-contrast_transforms = transforms.Compose([transforms.RandomHorizontalFlip(),
-                                          transforms.RandomResizedCrop(size=96),
-                                          transforms.RandomApply([
-                                              transforms.ColorJitter(brightness=0.5,
-                                                                     contrast=0.5,
-                                                                     saturation=0.5,
-                                                                     hue=0.1)
-                                          ], p=0.8),
-                                          transforms.RandomGrayscale(p=0.2),
-                                          transforms.GaussianBlur(kernel_size=9),
-                                          transforms.Normalize((0.5,), (0.5,))
-                                         ])
+t2np = lambda t: t.detach().cpu().numpy()
 
 class Block(nn.Module):
     
@@ -111,7 +110,7 @@ class SimCLR(nn.Module):
 
 class SimCLR_container(LightningModule):
     def __init__(self, image_channels, encoder_output_num, verbose=False, lr = 0.001, num_out_dim = 10, 
-                 transforms = ['hflip','crop+resize','colorjitter','gray','blur','norm'], temperature = 0.1):
+                 transforms_list = ['hflip','crop+resize','colorjitter','gray','blur'], temperature = 0.1):
         super().__init__()
         self.save_hyperparameters()
         self.verbose = verbose
@@ -122,22 +121,26 @@ class SimCLR_container(LightningModule):
         self.automatic_optimization = False
         self.loss_function = NTXentLoss(temperature=temperature)
 
+        self.contrast_transforms = transforms.Compose([transforms_dict[transform] for transform in transforms_list] +
+                                                      [transforms.Normalize((0.5,),(0.5,))])
+
+
         self.model = SimCLR(self.image_channels,self.encoder_out_dim)
 
     def forward(self, batch):
-        X, y = batch
-        x_1 = contrast_transforms(X)
-        x_2 = contrast_transforms(X)
-        x_1 = self.model(x_1)
-        x_2 = self.model(x_2)
-        return torch.cat((x_1,x_2))
+        x, y = batch
+        x1 = self.contrast_transforms(x)
+        x2 = self.contrast_transforms(x)
+        x1 = self.model(x1)
+        x2 = self.model(x2)
+        return torch.cat((x1,x2))
 
-    def training_step(self, batch):
+    def training_step(self, batch, batch_idx):
         X, y = batch
         opt = self.optimizers()
         opt.zero_grad()
         embeddings = self(batch)
-        indices = torch.arange(0,embeddings.size()//2)
+        indices = torch.arange(0,embeddings.size(0)//2)
         labels = torch.cat((indices,indices))
         loss = self.loss_function(embeddings,labels)
         self.manual_backward(loss)
@@ -145,38 +148,38 @@ class SimCLR_container(LightningModule):
         self.log("trn_ntxent_loss",loss)
         return loss
 
-    def validation_step(self, batch):
+    def validation_step(self, batch, batch_idx):
         X, y = batch
         embeddings = self(batch)
-        indices = torch.arange(0,embeddings.size()//2)
+        indices = torch.arange(0,embeddings.size(0)//2)
         labels = torch.cat((indices,indices))
         loss = self.loss_function(embeddings,labels)
         self.log('val_ntxent_loss',loss)
         return loss
 
-    def test_step(self, batch):
+    def test_step(self, batch, batch_idx):
         X, y = batch
         embeddings = self(batch)
-        indices = torch.arange(0,embeddings.size()//2)
+        indices = torch.arange(0,embeddings.size(0)//2)
         labels = torch.cat((indices,indices))
         loss = self.loss_function(embeddings,labels)
         self.log('test_ntxent_loss',loss)
         return loss
 
     def training_epoch_end(self, outputs):
-        loss = sum(outputs) / len(outputs)
+        loss = sum(item['loss'] for item in outputs) / len(outputs)
         epoch = self.current_epoch
-        print("epoch_trn:Ep%d || NTXent Loss:%.03f \n"(epoch,loss))
+        print("\nepoch_trn:Ep%d || NTXent Loss:%.03f \n"%(epoch,loss.item()))
 
     def validation_epoch_end(self, outputs):
         loss = sum(outputs) / len(outputs)
         epoch = self.current_epoch
-        print("epoch_val:Ep%d || NTXent Loss:%.03f \n"(epoch,loss))
+        print("\nepoch_val:Ep%d || NTXent Loss:%.03f \n"%(epoch,loss.item()))
 
     def test_epoch_end(self, outputs):
         loss = sum(outputs) / len(outputs)
         epoch = self.current_epoch
-        print("epoch_tst:Ep%d || NTXent Loss:%.03f \n"(epoch,loss))
+        print("\nepoch_tst:Ep%d || NTXent Loss:%.03f \n"%(epoch,loss.item()))
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.model.parameters(),lr=self.lr)
@@ -213,38 +216,89 @@ class LightningDSModel(LightningModule):
         self.lr = lr
         self.num_classes = num_classes
         self.linEval = linEval
-        self.loss_func = nn.CrossEntropyLoss()
+        self.loss_function = nn.CrossEntropyLoss()
         self.automatic_optimization = False
 
         encoder = SimCLR(image_channels,encoder_output_num)
-        encoder.load_state_dict(encoder_param_dir)
+        encoder.load_state_dict(torch.load(encoder_param_dir))
         self.model = DSModel(encoder,self.num_classes,self.linEval)
     
     def forward(self, data):
         x,y = data
         return self.model(x)
     
-    def training_step(self,data):
+    def training_step(self,data,batch_idx):
         x,y = data
         opt = self.optimizers()
         opt.zero_grad()
         outputs = self(data)
-        loss = self.loss_func(outputs,y)
+        loss = self.loss_function(outputs,y)
         self.manual_backward(loss)
         opt.step()
-        return loss
+        self.log('train_loss',loss)
+        return_dict = {'loss':loss,'y_out':t2np(outputs),'y':t2np(y)}
+        return return_dict
 
-    def validation_step(self,data):
+    def validation_step(self,data,batch_idx):
         x,y = data
         outputs = self(data)
-        loss = self.loss_func(outputs,y)
-        return loss
+        loss = self.loss_function(outputs,y)
+        self.log('val_loss',loss)
+        return_dict = {'loss':loss,'y_out':t2np(outputs),'y':t2np(y)}
+        return return_dict
 
-    def test_step(self,data):
+    def test_step(self,data,batch_idx):
         x,y = data
         outputs = self(data)
-        loss = self.loss_func(outputs,y)
-        return loss
+        loss = self.loss_function(outputs,y)
+        self.log('test_loss',loss)
+        return_dict = {'loss':loss,'y_out':t2np(outputs),'y':t2np(y)}
+        return return_dict
+
+    def training_epoch_end(self, outputs):
+        epoch = self.current_epoch
+        y_out = np.concatenate([x['y_out'] for x in outputs])
+        y = np.concatenate([x['y'] for x in outputs])
+        #losses = np.concatenate([x['loss'].cpu() for x in outputs])
+        #loss = sum(losses) / len(losses)
+        y_pred = y_out.argmax(axis=1)
+        y_true = y.argmax(axis=1)
+        perf_dict = {}
+        perf_dict['F1']  = f1_score(y_true,y_pred,average='macro')
+        perf_dict['Acc']  = accuracy_score(y_true,y_pred)
+        #perf_dict['loss'] = loss
+        self.log('trn_perf',perf_dict)
+        print("\nepoch_trn:Ep%d || Loss:%.03f Accuracy:%.03f F1:%.03f\n"%(epoch,0,perf_dict['Acc'],perf_dict['F1']))
+
+    def validation_epoch_end(self, outputs):
+        epoch = self.current_epoch
+        y_out = np.concatenate([x['y_out'] for x in outputs])
+        y = np.concatenate([x['y'] for x in outputs])
+        #losses = np.concatenate([x['loss'].cpu() for x in outputs])
+        #loss = sum(losses) / len(losses)
+        y_pred = y_out.argmax(axis=1)
+        y_true = y.argmax(axis=1)
+        perf_dict = {}
+        perf_dict['F1']  = f1_score(y_true,y_pred,average='macro')
+        perf_dict['Acc']  = accuracy_score(y_true,y_pred)
+        #perf_dict['loss'] = loss
+        self.log('val_perf',perf_dict)
+        print("\nepoch_val:Ep%d || Loss:%.03f Accuracy:%.03f F1:%.03f\n"%(epoch,0,perf_dict['Acc'],perf_dict['F1']))
+
+    def test_epoch_end(self, outputs):
+        epoch = self.current_epoch
+        y_out = np.concatenate([x['y_out'] for x in outputs])
+        y = np.concatenate([x['y'] for x in outputs])
+        #losses = np.concatenate([x['loss'].cpu() for x in outputs])
+        #loss = sum(losses) / len(losses)
+        y_pred = y_out.argmax(axis=1)
+        y_true = y.argmax(axis=1)
+        perf_dict = {}
+        perf_dict['F1']  = f1_score(y_true,y_pred,average='macro')
+        perf_dict['Acc']  = accuracy_score(y_true,y_pred)
+        #perf_dict['loss'] = loss
+        self.log('test_perf',perf_dict)
+        print("\nepoch_tst:Ep%d || Loss:%.03f Accuracy:%.03f F1:%.03f\n"%(epoch,0,perf_dict['Acc'],perf_dict['F1']))
         
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.model.parameters(),lr=self.lr)

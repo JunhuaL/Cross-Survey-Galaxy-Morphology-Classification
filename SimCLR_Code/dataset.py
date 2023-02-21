@@ -17,6 +17,8 @@ class Galaxy10_Dataset(LightningDataModule):
         super(Galaxy10_Dataset).__init__()
         self.file_path = datadir
         self.batch_size = batch_size
+        self.prepare_data_per_node = False
+        self._log_hyperparams = True
 
     def prepare_data(self):
         pass
