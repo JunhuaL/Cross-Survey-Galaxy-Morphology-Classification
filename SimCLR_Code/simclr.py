@@ -54,7 +54,12 @@ if __name__ == '__main__':
                     )
     trainer.fit(model, datamodule=datamodule,)
 
-    encoder_model_file = save_model_folder+'encoder/'+f'simCLR.{transforms[0]}.{transforms[1]}.pt'
+    encoder_model_file = save_model_folder+'encoder/'
+    model_filename = f'simCLR.{transforms[0]}.{transforms[1]}.pt'
+    if not os.path.exists(encoder_model_file):
+        os.mkdir(encoder_model_file)
+    encoder_model_file += model_filename
+    
     t.save(model.model.state_dict(),encoder_model_file)
 
     ##########################################################################
@@ -90,7 +95,12 @@ if __name__ == '__main__':
 
     trainer.fit(lin_Eval,datamodule)
 
-    model_file = save_model_folder+'lin_Eval/'+f'DSModel.{transforms[0]}.{transforms[1]}.pt'
+    model_file = save_model_folder+'lin_Eval/'
+    filename = f'DSModel.{transforms[0]}.{transforms[1]}.pt'
+    if not os.path.exists(model_file):
+        os.mkdir(model_file)
+    model_file += filename
+
     t.save(lin_Eval.model.state_dict(),model_file)
 
     ##########################################################################
@@ -126,5 +136,9 @@ if __name__ == '__main__':
 
     trainer.fit(lin_Eval,datamodule)
 
-    model_file = save_model_folder+'fine_tuning/'+f'DSModel.{transforms[0]}.{transforms[1]}.pt'
+    model_file = save_model_folder+'fine_tuning/'
+    filename = f'DSModel.{transforms[0]}.{transforms[1]}.pt'
+    if not os.path.exists(model_file):
+        os.mkdir(model_file)
+    model_file+=filename 
     t.save(lin_Eval.model.state_dict(),model_file)
