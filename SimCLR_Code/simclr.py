@@ -21,8 +21,8 @@ if __name__ == '__main__':
     transforms = [sys.argv[1],sys.argv[2]]
     print("applying these data augmentations: ",transforms)
 
-    root_folder = 'outputs/'
-    save_model_folder = 'outputs/models/' + '+'.join(transforms) + '/'
+    root_folder = 'outputs/' + '+'.join(transforms) + '/'
+    save_model_folder = root_folder + 'models/'
 
     datamodule = Galaxy10_Dataset('Galaxy10.h5')
 
@@ -54,13 +54,16 @@ if __name__ == '__main__':
                     )
     trainer.fit(model, datamodule=datamodule,)
 
-    model_file = save_model_folder+f'simCLR.{transforms[0]}.{transforms[1]}.pt'
-    t.save(model.model.state_dict(),model_file)
+    encoder_model_file = save_model_folder+'encoder/'+f'simCLR.{transforms[0]}.{transforms[1]}.pt'
+    t.save(model.model.state_dict(),encoder_model_file)
 
+    ##########################################################################
+    #   LINEAR EVALUATION
+    ##########################################################################
+    
+    lin_Eval = LightningDSModel(3,1024,encoder_model_file,10,True,0.001)
 
-    lin_Eval = LightningDSModel(3,1024,model_file,10,False,0.001)
-
-    earlystopping_tracking = 'train_loss'
+    earlystopping_tracking = 'val_loss'
     earlystopping_mode = 'min'
     earlystopping_min_delta = 0.0001
 
@@ -87,5 +90,41 @@ if __name__ == '__main__':
 
     trainer.fit(lin_Eval,datamodule)
 
-    model_file = save_model_folder+f'DSModel.{transforms[0]}.{transforms[1]}.pt'
+    model_file = save_model_folder+'lin_Eval/'+f'DSModel.{transforms[0]}.{transforms[1]}.pt'
+    t.save(lin_Eval.model.state_dict(),model_file)
+
+    ##########################################################################
+    #   FINE TUNING 
+    ##########################################################################
+    
+    fine_tuning = LightningDSModel(3,1024,encoder_model_file,10,False,0.001)
+    
+    earlystopping_tracking = 'val_loss'
+    earlystopping_mode = 'min'
+    earlystopping_min_delta = 0.0001
+
+    checkpoint_callback = pl_callbacks.ModelCheckpoint(dirpath=save_model_folder,
+                                                       mode = earlystopping_mode,
+                                                       monitor=earlystopping_tracking,
+                                                       save_top_k=1,save_last=True,)
+    
+    earlystop_callback = pl_callbacks.EarlyStopping(earlystopping_tracking,verbose=True,
+                                        mode = earlystopping_mode,
+                                        min_delta=earlystopping_min_delta,
+                                        patience=10,)
+
+    trainer = Trainer(
+                    gpus=[0,],
+                    accelerator=None,
+                    max_epochs=200, min_epochs=5,
+                    default_root_dir= root_folder,
+                    fast_dev_run=False,
+                    check_val_every_n_epoch=1,
+                    callbacks=  [checkpoint_callback,
+                                earlystop_callback,],
+                    )
+
+    trainer.fit(lin_Eval,datamodule)
+
+    model_file = save_model_folder+'fine_tuning/'+f'DSModel.{transforms[0]}.{transforms[1]}.pt'
     t.save(lin_Eval.model.state_dict(),model_file)
