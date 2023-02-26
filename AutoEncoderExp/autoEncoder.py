@@ -1,44 +1,12 @@
-import torch.optim as optim 
 import torch
 import torch.nn as nn
-from torch.utils.data import TensorDataset, DataLoader
 import torch.nn.functional as F
 import numpy as np
-from sklearn.model_selection import train_test_split
-from tensorflow.keras.utils import to_categorical
-
-
-
-from astroNN.datasets import galaxy10
-from astroNN.datasets.galaxy10 import galaxy10cls_lookup
-
+from pytorch_lightning import LightningModule
 from resNet18 import ResNet_18
+from sklearn.metrics import (accuracy_score,f1_score,auc,precision_recall_curve,roc_curve)
 
-# Import data
-
-images, labels = galaxy10.load_data()
-labels = labels.astype(np.float32)
-labels = to_categorical(labels)
-images = images.astype(np.float32)
-images = images/255
-images = images.transpose((0,3, 1, 2))
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-# Create DataLoader
-
-X = torch.from_numpy(images)
-y = torch.from_numpy(labels)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.20)
-
-
-
-datasetTensor = TensorDataset(X_train,y_train)
-trainLoader = DataLoader(datasetTensor, batch_size = 32, shuffle=True)
-
-
-datasetTensor = TensorDataset(X_test,y_test)
-testLoader = DataLoader(datasetTensor, batch_size = 32, shuffle=True)
+t2np = lambda t: t.detach().cpu().numpy()
 
 
 
@@ -76,11 +44,11 @@ class Decoder(nn.Module):
 
 
 class ConvAutoencoder(nn.Module):
-    def __init__(self):
+    def __init__(self, encoder_output_num):
         super(ConvAutoencoder, self).__init__()
 #         ## encoder layers ##
-        self.encoder = ResNet_18(3,256)
-        self.decoder = Decoder(256)
+        self.encoder = ResNet_18(3,encoder_output_num)
+        self.decoder = Decoder(encoder_output_num)
 
     def forward(self, x):
         ## encode ##
@@ -94,8 +62,45 @@ class ConvAutoencoder(nn.Module):
         return x
 
 
+class AutoencoderLightning(LightningModule):
+    def __init__(self, encoder_output_num, verbose=False, lr = 0.001):
+        super().__init__()
+        # TODO ?
+        self.save_hyperparameters()
+        # TODO ?
+        self.verbose = verbose
+        self.lr = lr
+        self.encoder_output_num  = encoder_output_num
+        # TODO ?
+        self.automatic_optimization = False
+        self.loss_function = nn.MSELoss()
+        self.model = ConvAutoencoder(encoder_output_num)
+
+    def forward(self, batch):
+        X,y = batch
+        return self.model(batch)
+
+    def training_step(self, batch, batch_idx):
+        X,y = batch
+        outputs = self.forward(X)
+        loss = self.loss_function(y, outputs)
+        return loss
+
+    def training_epoch_end(self, outputs):
+        loss = sum(item['loss'] for item in outputs) / len(outputs)
+        epoch = self.current_epoch
+        self.log('MSE_loss', loss)
+        print("\nepoch_tst:Ep%d || MSE Loss:%.03f \n"%(epoch,loss.item()))
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.model.parameters(),lr=self.lr)
+        return optimizer
+
+
+
+
 class DSModel(nn.Module):
-    def __init__(self,model,num_classes):
+    def __init__(self,model,num_classes, encoder_output_num, linEval):
         super().__init__()
         
         self.Encoder = model.encoder
@@ -105,7 +110,7 @@ class DSModel(nn.Module):
             for p in self.Encoder.parameters():
                 p.requires_grad = False
 
-        self.lastlayer = nn.Linear(256,self.num_classes)
+        self.lastlayer = nn.Linear(encoder_output_num,self.num_classes)
         
     def forward(self,x):
         x = self.Encoder(x)
@@ -114,96 +119,76 @@ class DSModel(nn.Module):
         return x
 
 
-################################  TRAINING  ################################
+class DSModelLightning(LightningModule):
+    def __init__(self, num_classes, encoder_output_num, linEval, lr, autoencoder_param_dir):
+        super().__init__()
+        self.save_hyperparameters()
+        self.lr = lr
+        self.num_classes = num_classes
+        self.linEval = linEval
+        self.loss_function = nn.CrossEntropyLoss()
+        self.automatic_optimization = False     
 
-model = ConvAutoencoder().to(device)
-# criterion = nn.BCELoss()
-criterion = nn.MSELoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+        autoEncoder = ConvAutoencoder(encoder_output_num)
+        autoEncoder.load_state_dict(torch.load(autoencoder_param_dir))
+        self.model = DSModel(autoEncoder, num_classes, encoder_output_num, linEval)
 
 
-EPOCHS = 100
-for epoch in range(1, EPOCHS+1):
-    train_loss = 0.0
-    for data in trainLoader:
-        images, _ = data
-        images = images.to(device)
-        outputs = model(images)
-#         print(outputs.shape)
-#         print(images.shape)
-#         print(images.shape)
-#         print(outputs.shape)
-        loss = criterion(outputs, images)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+    def forward(self, batch):
+        X,y = batch
+        return self.model(X)
+
+    def training_step(self, batch, batch_idx):
+        X,y = batch
+        outputs = self.forward(batch)
+        loss = self.loss_function(outputs, y)
+        return loss 
+
+    def validation_step(self, batch, batch_idx):
+        X,y = batch
+        outputs = self.forward(batch)
+        loss = self.loss_function(outputs, y)
+        return_dict = {'loss':loss, 'y_out':t2np(outputs), 'y':t2np}
+        return return_dict
+
+    def test_step(self, batch, batch_idx):
+        X,y = batch
+        outputs = self(batch)
+        loss = self.loss_function(outputs,y)
+        return_dict = {'loss':loss,'y_out':t2np(outputs),'y':t2np(y)}
+        return return_dict
+
+    def validation_epoch_end(self, outputs):
+        epoch = self.current_epoch
+        y_out = np.concatenate([x['y_out'] for x in outputs])
+        y = np.concatenate([x['y'] for x in outputs])
+        losses = np.array([x['loss'].cpu().item() for x in outputs])
+        loss = sum(losses) / len(losses)
+        y_pred = y_out.argmax(axis=1)
+        y_true = y.argmax(axis=1)
+        perf_dict = {}
+        perf_dict['F1']  = f1_score(y_true,y_pred,average='macro')
+        perf_dict['Acc']  = accuracy_score(y_true,y_pred)
+        perf_dict['loss'] = loss
+        self.log('val_perf',perf_dict)
+        self.log('val_loss',loss)
+        print("\nepoch_val:Ep%d || Loss:%.03f Accuracy:%.03f F1:%.03f\n"%(epoch,loss,perf_dict['Acc'],perf_dict['F1']))
+
+    def test_epoch_end(self, outputs):
+        epoch = self.current_epoch
+        y_out = np.concatenate([x['y_out'] for x in outputs])
+        y = np.concatenate([x['y'] for x in outputs])
+        losses = np.array([x['loss'].cpu().item() for x in outputs])
+        loss = sum(losses) / len(losses)
+        y_pred = y_out.argmax(axis=1)
+        y_true = y.argmax(axis=1)
+        perf_dict = {}
+        perf_dict['F1']  = f1_score(y_true,y_pred,average='macro')
+        perf_dict['Acc']  = accuracy_score(y_true,y_pred)
+        perf_dict['loss'] = loss
+        self.log('test_perf',perf_dict)
+        print("\nepoch_tst:Ep%d || Loss:%.03f Accuracy:%.03f F1:%.03f\n"%(epoch,loss,perf_dict['Acc'],perf_dict['F1']))
         
-        train_loss += loss.item()*images.size(0)
-        
-    train_loss = train_loss/len(trainLoader)
-    
-    print('Epoch: {} \tTraining Loss: {:.6f}'.format(
-        epoch, 
-        train_loss
-        ))
-        
-                
-###########################  FINE TUNNING/ LINEAR EVALUATION #########################
-
-linEval = True
-
-
-DSmodel = DSModel(model,10).to(device)
-optimizer = torch.optim.Adam(DSmodel.parameters(), lr=0.001)
-criterion = nn.CrossEntropyLoss()
-
-
-
-for epoch in range(EPOCHS):
-    for data in trainLoader:
-        
-        x,y = data
-
-        
-        x = x.to(device)
-        y = y.to(device)
-        
-        outputs = DSmodel(x)
-        loss = criterion(outputs,y)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        
-        
-        
-    print(f'loss for this epoch {epoch + 1} is {loss.tolist()}')
-
-
-
-
-
-
-
-############################ TESTING ################################
-
-
-## with torch.no_grad():
-n_correct = 0
-n_samples = 0
-n_class_correct = [0 for i in range(10)]
-n_class_samples = [0 for i in range(10)]
-for images, labels in testLoader:
-    images = images.to(device)
-    labels = labels.to(device)
-    _, labels = torch.max(labels.data, 1)
-    outputs = DSmodel(images)
-    # max returns (value ,index)
-    _, predicted = torch.max(outputs, 1)
-    n_samples += labels.size(0)
-    n_correct += (predicted == labels).sum().item()
-    
-
-
-
-acc = 100.0 * n_correct / n_samples
-print(f'Accuracy of the network: {acc} %')
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.model.parameters(),lr=self.lr)
+        return optimizer    
