@@ -1,0 +1,9 @@
+image_channels: 3
+encoder_output_num: 1024
+verbose: false
+lr: 0.001
+num_out_dim: 10
+transforms_list:
+- blur
+- hflip
+temperature: 0.1

@@ -145,7 +145,6 @@ class SimCLR_container(LightningModule):
         loss = self.loss_function(embeddings,labels)
         self.manual_backward(loss)
         opt.step()
-        self.log("trn_ntxent_loss",loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -154,7 +153,6 @@ class SimCLR_container(LightningModule):
         indices = torch.arange(0,embeddings.size(0)//2)
         labels = torch.cat((indices,indices))
         loss = self.loss_function(embeddings,labels)
-        self.log('val_ntxent_loss',loss)
         return loss
 
     def test_step(self, batch, batch_idx):
@@ -163,22 +161,24 @@ class SimCLR_container(LightningModule):
         indices = torch.arange(0,embeddings.size(0)//2)
         labels = torch.cat((indices,indices))
         loss = self.loss_function(embeddings,labels)
-        self.log('test_ntxent_loss',loss)
         return loss
 
     def training_epoch_end(self, outputs):
         loss = sum(item['loss'] for item in outputs) / len(outputs)
         epoch = self.current_epoch
+        self.log('trn_ntxent_loss',loss)
         print("\nepoch_trn:Ep%d || NTXent Loss:%.03f \n"%(epoch,loss.item()))
 
     def validation_epoch_end(self, outputs):
         loss = sum(outputs) / len(outputs)
         epoch = self.current_epoch
+        self.log('val_ntxent_loss',loss)
         print("\nepoch_val:Ep%d || NTXent Loss:%.03f \n"%(epoch,loss.item()))
 
     def test_epoch_end(self, outputs):
         loss = sum(outputs) / len(outputs)
         epoch = self.current_epoch
+        self.log('tst_ntxent_loss',loss)
         print("\nepoch_tst:Ep%d || NTXent Loss:%.03f \n"%(epoch,loss.item()))
 
     def configure_optimizers(self):
@@ -235,7 +235,6 @@ class LightningDSModel(LightningModule):
         loss = self.loss_function(outputs,y)
         self.manual_backward(loss)
         opt.step()
-        self.log('train_loss',loss)
         return_dict = {'loss':loss,'y_out':t2np(outputs),'y':t2np(y)}
         return return_dict
 
@@ -243,7 +242,6 @@ class LightningDSModel(LightningModule):
         x,y = data
         outputs = self(data)
         loss = self.loss_function(outputs,y)
-        self.log('val_loss',loss)
         return_dict = {'loss':loss,'y_out':t2np(outputs),'y':t2np(y)}
         return return_dict
 
@@ -251,7 +249,6 @@ class LightningDSModel(LightningModule):
         x,y = data
         outputs = self(data)
         loss = self.loss_function(outputs,y)
-        self.log('test_loss',loss)
         return_dict = {'loss':loss,'y_out':t2np(outputs),'y':t2np(y)}
         return return_dict
 
@@ -259,46 +256,47 @@ class LightningDSModel(LightningModule):
         epoch = self.current_epoch
         y_out = np.concatenate([x['y_out'] for x in outputs])
         y = np.concatenate([x['y'] for x in outputs])
-        #losses = np.concatenate([x['loss'].cpu() for x in outputs])
-        #loss = sum(losses) / len(losses)
+        losses = np.array([x['loss'].cpu().item() for x in outputs])
+        loss = sum(losses) / len(losses)
         y_pred = y_out.argmax(axis=1)
         y_true = y.argmax(axis=1)
         perf_dict = {}
         perf_dict['F1']  = f1_score(y_true,y_pred,average='macro')
         perf_dict['Acc']  = accuracy_score(y_true,y_pred)
-        #perf_dict['loss'] = loss
+        perf_dict['loss'] = loss
         self.log('trn_perf',perf_dict)
-        print("\nepoch_trn:Ep%d || Loss:%.03f Accuracy:%.03f F1:%.03f\n"%(epoch,0,perf_dict['Acc'],perf_dict['F1']))
+        print("\nepoch_trn:Ep%d || Loss:%.03f Accuracy:%.03f F1:%.03f\n"%(epoch,loss,perf_dict['Acc'],perf_dict['F1']))
 
     def validation_epoch_end(self, outputs):
         epoch = self.current_epoch
         y_out = np.concatenate([x['y_out'] for x in outputs])
         y = np.concatenate([x['y'] for x in outputs])
-        #losses = np.concatenate([x['loss'].cpu() for x in outputs])
-        #loss = sum(losses) / len(losses)
+        losses = np.array([x['loss'].cpu().item() for x in outputs])
+        loss = sum(losses) / len(losses)
         y_pred = y_out.argmax(axis=1)
         y_true = y.argmax(axis=1)
         perf_dict = {}
         perf_dict['F1']  = f1_score(y_true,y_pred,average='macro')
         perf_dict['Acc']  = accuracy_score(y_true,y_pred)
-        #perf_dict['loss'] = loss
+        perf_dict['loss'] = loss
         self.log('val_perf',perf_dict)
-        print("\nepoch_val:Ep%d || Loss:%.03f Accuracy:%.03f F1:%.03f\n"%(epoch,0,perf_dict['Acc'],perf_dict['F1']))
+        self.log('val_loss',loss)
+        print("\nepoch_val:Ep%d || Loss:%.03f Accuracy:%.03f F1:%.03f\n"%(epoch,loss,perf_dict['Acc'],perf_dict['F1']))
 
     def test_epoch_end(self, outputs):
         epoch = self.current_epoch
         y_out = np.concatenate([x['y_out'] for x in outputs])
         y = np.concatenate([x['y'] for x in outputs])
-        #losses = np.concatenate([x['loss'].cpu() for x in outputs])
-        #loss = sum(losses) / len(losses)
+        losses = np.array([x['loss'].cpu().item() for x in outputs])
+        loss = sum(losses) / len(losses)
         y_pred = y_out.argmax(axis=1)
         y_true = y.argmax(axis=1)
         perf_dict = {}
         perf_dict['F1']  = f1_score(y_true,y_pred,average='macro')
         perf_dict['Acc']  = accuracy_score(y_true,y_pred)
-        #perf_dict['loss'] = loss
+        perf_dict['loss'] = loss
         self.log('test_perf',perf_dict)
-        print("\nepoch_tst:Ep%d || Loss:%.03f Accuracy:%.03f F1:%.03f\n"%(epoch,0,perf_dict['Acc'],perf_dict['F1']))
+        print("\nepoch_tst:Ep%d || Loss:%.03f Accuracy:%.03f F1:%.03f\n"%(epoch,loss,perf_dict['Acc'],perf_dict['F1']))
         
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.model.parameters(),lr=self.lr)
