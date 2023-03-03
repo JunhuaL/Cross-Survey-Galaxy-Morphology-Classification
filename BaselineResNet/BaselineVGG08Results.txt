@@ -1,0 +1,60 @@
+loss for this epoch 1 is 1.870863956374091
+Accuracy of the network on the 3548 test images: 35 %
+train accuracy for this epoch 1 is 30.786580208627008
+loss for this epoch 2 is 1.6552934982218184
+Accuracy of the network on the 3548 test images: 40 %
+train accuracy for this epoch 2 is 37.6726811389907
+loss for this epoch 3 is 1.4790422519048054
+Accuracy of the network on the 3548 test images: 48 %
+train accuracy for this epoch 3 is 45.60191711305329
+loss for this epoch 4 is 1.3086696084555205
+Accuracy of the network on the 3548 test images: 57 %
+train accuracy for this epoch 4 is 53.55934592613476
+loss for this epoch 5 is 1.1367962473147624
+Accuracy of the network on the 3548 test images: 61 %
+train accuracy for this epoch 5 is 60.27628982238511
+loss for this epoch 6 is 1.0128228526126157
+Accuracy of the network on the 3548 test images: 62 %
+train accuracy for this epoch 6 is 65.6470256554835
+loss for this epoch 7 is 0.9518072444039423
+Accuracy of the network on the 3548 test images: 65 %
+train accuracy for this epoch 7 is 67.6346208063152
+loss for this epoch 8 is 0.8821303067175118
+Accuracy of the network on the 3548 test images: 67 %
+train accuracy for this epoch 8 is 70.51029038624189
+loss for this epoch 9 is 0.8216575428440764
+Accuracy of the network on the 3548 test images: 70 %
+train accuracy for this epoch 9 is 72.54017479560191
+loss for this epoch 10 is 0.7898392952508755
+Accuracy of the network on the 3548 test images: 70 %
+train accuracy for this epoch 10 is 73.60445446856498
+loss for this epoch 11 is 0.7532190318043167
+Accuracy of the network on the 3548 test images: 72 %
+train accuracy for this epoch 11 is 74.56301099520721
+loss for this epoch 12 is 0.7319942019409962
+Accuracy of the network on the 3548 test images: 69 %
+train accuracy for this epoch 12 is 75.13391598533973
+loss for this epoch 13 is 0.7031107808689814
+Accuracy of the network on the 3548 test images: 73 %
+train accuracy for this epoch 13 is 76.21229207781224
+loss for this epoch 14 is 0.6809243253088212
+Accuracy of the network on the 3548 test images: 71 %
+train accuracy for this epoch 14 is 77.19904144347336
+loss for this epoch 15 is 0.6483978633810809
+Accuracy of the network on the 3548 test images: 71 %
+train accuracy for this epoch 15 is 78.17169438962503
+loss for this epoch 16 is 0.6225646446954023
+Accuracy of the network on the 3548 test images: 73 %
+train accuracy for this epoch 16 is 78.92585283338032
+loss for this epoch 17 is 0.5952942025017094
+Accuracy of the network on the 3548 test images: 72 %
+train accuracy for this epoch 17 is 79.7434451649281
+loss for this epoch 18 is 0.5785850590883611
+Accuracy of the network on the 3548 test images: 73 %
+train accuracy for this epoch 18 is 80.50465181843812
+loss for this epoch 19 is 0.5520137160143874
+Accuracy of the network on the 3548 test images: 74 %
+train accuracy for this epoch 19 is 81.28700310121229
+loss for this epoch 20 is 0.5285866077284556
+Accuracy of the network on the 3548 test images: 74 %
+train accuracy for this epoch 20 is 82.1750775303073
