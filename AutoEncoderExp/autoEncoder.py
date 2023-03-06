@@ -65,39 +65,60 @@ class ConvAutoencoder(nn.Module):
 class AutoencoderLightning(LightningModule):
     def __init__(self, encoder_output_num, verbose=False, lr = 0.001):
         super().__init__()
-        # TODO ?
         self.save_hyperparameters()
-        # TODO ?
         self.verbose = verbose
         self.lr = lr
         self.encoder_output_num  = encoder_output_num
-        # TODO ?
         self.automatic_optimization = False
         self.loss_function = nn.MSELoss()
         self.model = ConvAutoencoder(encoder_output_num)
 
-    def forward(self, batch):
-        X,y = batch
-        return self.model(batch)
+    def forward(self, X):
+        return self.model(X)
 
     def training_step(self, batch, batch_idx):
         X,y = batch
-        outputs = self.forward(X)
-        loss = self.loss_function(y, outputs)
+        opt = self.optimizers()
+        opt.zero_grad()
+        outputs = self(X)
+        loss = self.loss_function(outputs, X)
+        self.manual_backward(loss)
+        opt.step()
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        X,y = batch
+        outputs = self(X)
+        loss = self.loss_function(outputs,X)
+        return loss
+    
+    def test_step(self, batch, batch_idx):
+        X,y = batch
+        outputs = self(X)
+        loss = self.loss_function(outputs,X)
         return loss
 
     def training_epoch_end(self, outputs):
         loss = sum(item['loss'] for item in outputs) / len(outputs)
         epoch = self.current_epoch
-        self.log('MSE_loss', loss)
+        self.log('trn_mse_loss', loss)
+        print("\nepoch_tst:Ep%d || MSE Loss:%.03f \n"%(epoch,loss.item()))
+    
+    def validation_epoch_end(self, outputs):
+        loss = sum(outputs) / len(outputs)
+        epoch = self.current_epoch
+        self.log('val_mse_loss', loss)
+        print("\nepoch_val:Ep%d || MSE Loss:%.03f \n"%(epoch,loss.item()))
+
+    def test_epoch_end(self, outputs):
+        loss = sum(outputs) / len(outputs)
+        epoch = self.current_epoch
+        self.log('tst_mse_loss',loss)
         print("\nepoch_tst:Ep%d || MSE Loss:%.03f \n"%(epoch,loss.item()))
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.model.parameters(),lr=self.lr)
         return optimizer
-
-
-
 
 class DSModel(nn.Module):
     def __init__(self,model,num_classes, encoder_output_num, linEval):
@@ -142,13 +163,14 @@ class DSModelLightning(LightningModule):
         X,y = batch
         outputs = self.forward(batch)
         loss = self.loss_function(outputs, y)
-        return loss 
+        return_dict = {'loss':loss,'y_out':t2np(outputs),'y':t2np(y)}
+        return return_dict
 
     def validation_step(self, batch, batch_idx):
         X,y = batch
         outputs = self.forward(batch)
         loss = self.loss_function(outputs, y)
-        return_dict = {'loss':loss, 'y_out':t2np(outputs), 'y':t2np}
+        return_dict = {'loss':loss,'y_out':t2np(outputs),'y':t2np(y)}
         return return_dict
 
     def test_step(self, batch, batch_idx):
