@@ -1,7 +1,7 @@
 import torch.optim as optim 
 import torch
 import torch.nn as nn
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import TensorDataset, DataLoader, random_split
 import torch.nn.functional as F
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -22,30 +22,30 @@ print("loading complete")
 print("creating categorical labels")
 # To convert to desirable type
 labels = np.eye(10)[labels]
-labels = labels.astype(np.float32)
-images = images.astype(np.float32)
-images = images/255
+labels = labels.astype(np.float16,copy=False)
+images = images.astype(np.float16,copy=False)
+images /= 255
 images = images.transpose((0,3, 1, 2))
 print("converted labels")
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-print("splitting data and loading to tensor")
-X_train, X_test, y_train, y_test = train_test_split(images,labels,test_size=0.2)
-X_train = torch.from_numpy(X_train).share_memory_()
-X_test = torch.from_numpy(X_test).share_memory_()
-y_train = torch.from_numpy(y_train).share_memory_()
-y_test = torch.from_numpy(y_test).share_memory_()
+print("splitting data and loading into tensors")
+
+images = torch.from_numpy(images).share_memory_()
+labels = torch.from_numpy(labels).share_memory_()
+
+X_train,X_test,y_train,y_test = train_test_split(images,labels,test_size=0.2)
 
 print("loaded to tensor")
 print("loading training set dataloader")
-datasetTensor = TensorDataset(X_train,y_train)
-trainLoader = DataLoader(datasetTensor, batch_size = 32, shuffle=False)
+train_set = TensorDataset(X_train,y_train)
+trainLoader = DataLoader(train_set, batch_size = 32, shuffle=True)
 print("complete loading training set dataloader")
 
 print("loading test set dataloader")
-datasetTensor = TensorDataset(X_test,y_test)
-testLoader = DataLoader(datasetTensor, batch_size = 32, shuffle=False)
+test_set = TensorDataset(X_test,y_test)
+testLoader = DataLoader(test_set, batch_size = 32, shuffle=True)
 print("complete loading test set dataloader")
 
 learning_rate = 0.001
@@ -69,6 +69,7 @@ def test():
     with torch.no_grad():
         for data in testLoader:
             images, labels = data
+            images = images.float()
 
             # calculate outputs by running images through the network
             outputs = net(images.to(device))
@@ -96,7 +97,8 @@ for epoch in range(EPOCHS):
     train_running_correct = 0
     for data in trainLoader:
         X,y = data
-        y = y.to(device)
+        X = X.float()
+        y = y.float().to(device)
         net.zero_grad()
         # print(type(X))
         # print(X.shape)
@@ -116,10 +118,8 @@ for epoch in range(EPOCHS):
         losses.append(loss.item())
         loss.backward()
         optimizer.step()
-        
     mean_loss = sum(losses)/len(losses)
     print(f'loss for this epoch {epoch + 1} is {mean_loss}')
-    
     test()
     epoch_acc = 100. * (train_running_correct / len(trainLoader.dataset))
     print(f'train accuracy for this epoch {epoch + 1} is {epoch_acc}')
