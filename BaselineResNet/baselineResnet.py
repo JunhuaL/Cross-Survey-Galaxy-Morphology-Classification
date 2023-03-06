@@ -10,38 +10,43 @@ import h5py
 from ResNet import ResNet_18
 
 
-
+print("loading data")
 
 with h5py.File('Galaxy10_DECals.h5', 'r') as F:
     images = np.array(F['images'])
     labels = np.array(F['ans'])
 
 # To convert the labels to categorical 10 classes
+print("loading complete")
 
-
+print("creating categorical labels")
 # To convert to desirable type
 labels = np.eye(10)[labels]
 labels = labels.astype(np.float32)
 images = images.astype(np.float32)
 images = images/255
 images = images.transpose((0,3, 1, 2))
-
+print("converted labels")
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+print("splitting data and loading to tensor")
+X_train, X_test, y_train, y_test = train_test_split(images,labels,test_size=0.2)
+X_train = torch.from_numpy(X_train).share_memory_()
+X_test = torch.from_numpy(X_test).share_memory_()
+y_train = torch.from_numpy(y_train).share_memory_()
+y_test = torch.from_numpy(y_test).share_memory_()
 
-
-X = torch.from_numpy(images)
-y = torch.from_numpy(labels)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.20)
-
-
+print("loaded to tensor")
+print("loading training set dataloader")
 datasetTensor = TensorDataset(X_train,y_train)
-trainLoader = DataLoader(datasetTensor, batch_size = 32, shuffle=True)
+trainLoader = DataLoader(datasetTensor, batch_size = 32, shuffle=False)
+print("complete loading training set dataloader")
 
-
+print("loading test set dataloader")
 datasetTensor = TensorDataset(X_test,y_test)
-testLoader = DataLoader(datasetTensor, batch_size = 32, shuffle=True)
+testLoader = DataLoader(datasetTensor, batch_size = 32, shuffle=False)
+print("complete loading test set dataloader")
 
 learning_rate = 0.001
 EPOCHS = 20
