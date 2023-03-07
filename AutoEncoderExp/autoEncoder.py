@@ -20,6 +20,7 @@ class Decoder(nn.Module):
         self.t_conv3 = nn.ConvTranspose2d(128, 64, 2, stride=2)
         self.t_conv4 = nn.ConvTranspose2d(64, 16, 2, stride=2)
         self.t_conv5 = nn.ConvTranspose2d(16, 3, 6, stride=1)
+        self.t_conv6 = nn.ConvTranspose2d(16, 3, 2, stride=2)
     def forward(self, z):
         x = self.linear(z)
 #         print(x.shape)
@@ -35,10 +36,10 @@ class Decoder(nn.Module):
 #         print(x.shape)
         x = torch.relu(self.t_conv4(x))
 #         print(x.shape)
-        x = torch.relu(self.t_conv5(x))
+        
 #         print(x.shape)
-        x = x.view(x.size(0), 3, 69, 69)
-#         print(x.shape)
+        x = torch.relu(self.t_conv6(x))
+        x = x.view(x.size(0), 3, 128, 128)
         return x
 
 
@@ -51,6 +52,7 @@ class ConvAutoencoder(nn.Module):
         self.decoder = Decoder(encoder_output_num)
 
     def forward(self, x):
+        x = x.float()
         ## encode ##
         # add hidden layers with relu activation function
         # and maxpooling after
@@ -60,6 +62,8 @@ class ConvAutoencoder(nn.Module):
         ## decode ##
         x = self.decoder(x)
         return x
+
+    
 
 
 class AutoencoderLightning(LightningModule):
@@ -78,12 +82,14 @@ class AutoencoderLightning(LightningModule):
 
     def training_step(self, batch, batch_idx):
         X,y = batch
+        X = X.float()
         opt = self.optimizers()
         opt.zero_grad()
         outputs = self(X)
         loss = self.loss_function(outputs, X)
         self.manual_backward(loss)
         opt.step()
+        torch.cuda.empty_cache()
         return loss
 
     def validation_step(self, batch, batch_idx):

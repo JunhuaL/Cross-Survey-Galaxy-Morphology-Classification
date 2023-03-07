@@ -5,31 +5,37 @@ from torch.utils.data import TensorDataset, DataLoader
 import torch.nn.functional as F
 import numpy as np
 from sklearn.model_selection import train_test_split
-from tensorflow.keras.utils import to_categorical
+from tqdm import tqdm
+# from tensorflow.keras.utils import to_categorical
 
 
 
-from astroNN.datasets import galaxy10
-from astroNN.datasets.galaxy10 import galaxy10cls_lookup
+# from astroNN.datasets import galaxy10
+# from astroNN.datasets.galaxy10 import galaxy10cls_lookup
 
 from resNet18 import ResNet_18
 
 # Import data
 
-images, labels = galaxy10.load_data()
-labels = labels.astype(np.float32)
-labels = to_categorical(labels)
-images = images.astype(np.float32)
-images = images/255
-images = images.transpose((0,3, 1, 2))
+# images, labels = galaxy10.load_data()
+# labels = labels.astype(np.float32)
+# labels = to_categorical(labels)
+# images = images.astype(np.float32)
+# images = images/255
+# images = images.transpose((0,3, 1, 2))
+images = torch.load('dataset_final.pt').share_memory_()
+images = torch.permute(images, (0,3,1,2))
+
+labels = torch.zeros(images.size(0)).share_memory_()
+
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Create DataLoader
 
-X = torch.from_numpy(images)
-y = torch.from_numpy(labels)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.20)
+# X = torch.from_numpy(images)
+# y = torch.from_numpy(labels)
+X_train, X_test, y_train, y_test = train_test_split(images, labels, test_size = 0.20)
 
 
 
@@ -52,6 +58,7 @@ class Decoder(nn.Module):
         self.t_conv3 = nn.ConvTranspose2d(128, 64, 2, stride=2)
         self.t_conv4 = nn.ConvTranspose2d(64, 16, 2, stride=2)
         self.t_conv5 = nn.ConvTranspose2d(16, 3, 6, stride=1)
+        self.t_conv6 = nn.ConvTranspose2d(16, 3, 2, stride=2)
     def forward(self, z):
         x = self.linear(z)
 #         print(x.shape)
@@ -67,9 +74,11 @@ class Decoder(nn.Module):
 #         print(x.shape)
         x = torch.relu(self.t_conv4(x))
 #         print(x.shape)
-        x = torch.relu(self.t_conv5(x))
-#         print(x.shape)
-        x = x.view(x.size(0), 3, 69, 69)
+#         x = torch.relu(self.t_conv5(x))
+# #         print(x.shape)
+#         x = x.view(x.size(0), 3, 69, 69)
+        x = torch.relu(self.t_conv6(x))
+        x = x.view(x.size(0), 3, 128, 128)
 #         print(x.shape)
         return x
 
@@ -86,6 +95,7 @@ class ConvAutoencoder(nn.Module):
         ## encode ##
         # add hidden layers with relu activation function
         # and maxpooling after
+        x = x.float()
         x = self.encoder(x)
 #         x = x.view(2048,1,1)
 #         print(x.shape)
@@ -123,11 +133,12 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 
 EPOCHS = 100
-for epoch in range(1, EPOCHS+1):
+for epoch in (range(1, EPOCHS+1)):
     train_loss = 0.0
-    for data in trainLoader:
+    for data in tqdm(trainLoader):
         images, _ = data
         images = images.to(device)
+        images = images.float()
         outputs = model(images)
 #         print(outputs.shape)
 #         print(images.shape)

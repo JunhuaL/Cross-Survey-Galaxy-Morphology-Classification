@@ -4,7 +4,7 @@ from pytorch_lightning import callbacks as pl_callbacks
 from pytorch_lightning import Trainer
 
 from autoEncoder import DSModelLightning,AutoencoderLightning
-from dataset import Galaxy10_Dataset
+from dataset import Galaxy10_Dataset, GalaxyZooUnlabbel_dataset
 
 
 latent_size = 128
@@ -20,7 +20,7 @@ if __name__ == '__main__':
     root_folder = 'outputs/'
     save_model_folder = root_folder + 'models/'
 
-    datamodule = Galaxy10_Dataset('Galaxy10.h5')
+    datamodule = GalaxyZooUnlabbel_dataset('dataset_final.pt')
     model = AutoencoderLightning(latent_size, lr = learning_rate)
 
     earlystopping_tracking = 'trn_mse_loss'
@@ -61,7 +61,8 @@ if __name__ == '__main__':
     ##########################################################################
     #   LINEAR EVALUATION
     ##########################################################################
-
+    
+    datamodule = Galaxy10_Dataset('Galaxy10.h5')
     lin_Eval = DSModelLightning(10,latent_size,True,learning_rate,encoder_model_file)
 
     earlystopping_tracking = 'val_loss'
