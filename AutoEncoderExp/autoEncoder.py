@@ -90,37 +90,38 @@ class AutoencoderLightning(LightningModule):
         self.manual_backward(loss)
         opt.step()
         torch.cuda.empty_cache()
-        return loss
+
+        return torch.tensor(loss.item())
 
     def validation_step(self, batch, batch_idx):
         X,y = batch
         outputs = self(X)
         loss = self.loss_function(outputs,X)
-        return loss
+        return torch.tensor(loss.item())
     
     def test_step(self, batch, batch_idx):
         X,y = batch
         outputs = self(X)
         loss = self.loss_function(outputs,X)
-        return loss
+        return torch.tensor(loss.item())
 
     def training_epoch_end(self, outputs):
         loss = sum(item['loss'] for item in outputs) / len(outputs)
         epoch = self.current_epoch
         self.log('trn_mse_loss', loss)
-        print("\nepoch_tst:Ep%d || MSE Loss:%.03f \n"%(epoch,loss.item()))
+        print("\nepoch_tst:Ep%d || MSE Loss:%.03f \n"%(epoch,loss))
     
     def validation_epoch_end(self, outputs):
         loss = sum(outputs) / len(outputs)
         epoch = self.current_epoch
         self.log('val_mse_loss', loss)
-        print("\nepoch_val:Ep%d || MSE Loss:%.03f \n"%(epoch,loss.item()))
+        print("\nepoch_val:Ep%d || MSE Loss:%.03f \n"%(epoch,loss))
 
     def test_epoch_end(self, outputs):
         loss = sum(outputs) / len(outputs)
         epoch = self.current_epoch
         self.log('tst_mse_loss',loss)
-        print("\nepoch_tst:Ep%d || MSE Loss:%.03f \n"%(epoch,loss.item()))
+        print("\nepoch_tst:Ep%d || MSE Loss:%.03f \n"%(epoch,loss))
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.model.parameters(),lr=self.lr)
