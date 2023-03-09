@@ -12,7 +12,7 @@ from pytorch_lightning import callbacks as pl_callbacks
 from pytorch_lightning import Trainer
 
 from model import SimCLR_container,LightningDSModel
-from dataset import Galaxy10_Dataset
+from dataset import Galaxy10_Dataset, GalaxyZooUnlabelled_dataset
 
 if __name__ == '__main__':
     device = t.device('cuda' if t.cuda.is_available() else 'cpu')
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     root_folder = 'outputs/' + '+'.join(transforms) + '/'
     save_model_folder = root_folder + 'models/'
 
-    datamodule = Galaxy10_Dataset('Galaxy10.h5')
+    datamodule = GalaxyZooUnlabelled_dataset('dataset_final.pt')
 
     model = SimCLR_container(3,1024,transforms_list=transforms)
 
@@ -65,6 +65,8 @@ if __name__ == '__main__':
     ##########################################################################
     #   LINEAR EVALUATION
     ##########################################################################
+
+    datamodule = Galaxy10_Dataset('Galaxy10.h5')
     
     lin_Eval = LightningDSModel(3,1024,encoder_model_file,10,True,0.001)
 

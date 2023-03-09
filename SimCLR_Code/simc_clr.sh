@@ -9,7 +9,7 @@ source ~/.bashrc
 
 set -e
 
-CONDA_ENV_NAME=masters
+CONDA_ENV_NAME=mlp
 echo "Activating conda environment: ${CONDA_ENV_NAME}"
 conda activate ${CONDA_ENV_NAME}
 

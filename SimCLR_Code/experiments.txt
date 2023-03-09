@@ -1,0 +1,4 @@
+python simclr.py crop+resize colorjitter
+python simclr.py crop+resize gray
+python simclr.py crop+resize crop+resize
+

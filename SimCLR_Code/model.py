@@ -8,14 +8,12 @@ import numpy as np
 from pytorch_lightning import LightningModule
 from sklearn.metrics import (accuracy_score,f1_score,auc,precision_recall_curve,roc_curve)
 
-transforms_dict = {'hflip':transforms.RandomHorizontalFlip(),
-                   'crop+resize': transforms.RandomResizedCrop(size=96),
+transforms_dict = {'crop+resize': transforms.RandomResizedCrop(size=96),
                    'colorjitter': transforms.RandomApply([transforms.ColorJitter(brightness=0.5,
                                                                                  contrast=0.5,
                                                                                  saturation=0.5,
                                                                                  hue=0.1)], p=0.8),
-                   'gray': transforms.RandomGrayscale(p=0.2),
-                   'blur': transforms.GaussianBlur(kernel_size=9)}
+                   'gray': transforms.RandomGrayscale(p=0.2)}
 
 t2np = lambda t: t.detach().cpu().numpy()
 
@@ -85,7 +83,7 @@ class ResNet_18(nn.Module):
         x = self.avgpool(x)
         x = x.view(x.shape[0], -1)
         x = self.fc(x)
-        return x 
+        return x
     
     def identity_downsample(self, in_channels, out_channels):
         return nn.Sequential(
@@ -129,6 +127,7 @@ class SimCLR_container(LightningModule):
 
     def forward(self, batch):
         x, y = batch
+        x = x.float()
         x1 = self.contrast_transforms(x)
         x2 = self.contrast_transforms(x)
         x1 = self.model(x1)
@@ -137,6 +136,7 @@ class SimCLR_container(LightningModule):
 
     def training_step(self, batch, batch_idx):
         X, y = batch
+        X = X.float()
         opt = self.optimizers()
         opt.zero_grad()
         embeddings = self(batch)
@@ -145,10 +145,12 @@ class SimCLR_container(LightningModule):
         loss = self.loss_function(embeddings,labels)
         self.manual_backward(loss)
         opt.step()
+        torch.cuda.empty_cache()
         return loss
 
     def validation_step(self, batch, batch_idx):
         X, y = batch
+        X = X.float()
         embeddings = self(batch)
         indices = torch.arange(0,embeddings.size(0)//2)
         labels = torch.cat((indices,indices))
@@ -157,6 +159,7 @@ class SimCLR_container(LightningModule):
 
     def test_step(self, batch, batch_idx):
         X, y = batch
+        X = X.float()
         embeddings = self(batch)
         indices = torch.arange(0,embeddings.size(0)//2)
         labels = torch.cat((indices,indices))
