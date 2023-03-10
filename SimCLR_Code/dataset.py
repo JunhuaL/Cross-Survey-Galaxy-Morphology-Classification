@@ -32,7 +32,7 @@ class Galaxy10_Dataset(LightningDataModule):
         labels = labels.astype(np.float32)
         images = images.astype(np.float32)
         images = images/255
-        # images = images.permute((0,3,1,2))
+        images = images.transpose((0,3,1,2))
 
         images = torch.from_numpy(images)
         labels = torch.from_numpy(labels)
