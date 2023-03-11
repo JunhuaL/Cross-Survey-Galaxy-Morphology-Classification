@@ -4,3 +4,6 @@ python simclr.py rotation gray crop+resize
 python simclr.py colorjitter crop+resize
 python simclr.py blur crop+resize
 python simclr.py gray crop+resize
+python simclr.py crop+resize colorjitter
+python simclr.py crop+resize gray
+python simclr.py crop+resize crop+resize

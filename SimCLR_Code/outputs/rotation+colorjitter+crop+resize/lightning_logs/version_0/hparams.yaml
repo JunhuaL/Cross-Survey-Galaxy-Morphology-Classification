@@ -1,0 +1,10 @@
+encoder_output_num: 1024
+image_channels: 3
+lr: 0.001
+num_out_dim: 10
+temperature: 0.1
+transforms_list:
+- rotation
+- colorjitter
+- crop+resize
+verbose: false

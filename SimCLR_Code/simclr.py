@@ -18,7 +18,7 @@ if __name__ == '__main__':
     device = t.device('cuda' if t.cuda.is_available() else 'cpu')
     print("Using device:", device)
 
-    transforms = [sys.argv[1],sys.argv[2]]
+    transforms = sys.argv[1:]
     print("applying these data augmentations: ",transforms)
 
     root_folder = 'outputs/' + '+'.join(transforms) + '/'
@@ -55,7 +55,8 @@ if __name__ == '__main__':
     trainer.fit(model, datamodule=datamodule,)
 
     encoder_model_file = save_model_folder+'encoder/'
-    model_filename = f'simCLR.{transforms[0]}.{transforms[1]}.pt'
+    transforms = '.'.join(transforms)
+    model_filename = f'simCLR.{transforms}.pt'
     if not os.path.exists(encoder_model_file):
         os.mkdir(encoder_model_file)
     encoder_model_file += model_filename

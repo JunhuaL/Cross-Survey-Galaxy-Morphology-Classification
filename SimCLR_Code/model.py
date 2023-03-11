@@ -14,7 +14,7 @@ def redden(image):
     image = np.float32(image*(10.**(R*ebv/2.5)))
     return image
 
-transforms_dict = {'crop+resize': transforms.RandomResizedCrop(size=96),
+transforms_dict = {'crop+resize': transforms.RandomApply([transforms.RandomResizedCrop(size=96)],p=0.5),
                    'colorjitter': transforms.RandomApply([transforms.ColorJitter(brightness=0.5,
                                                                                  contrast=0.5,
                                                                                  saturation=0.5,
@@ -22,7 +22,7 @@ transforms_dict = {'crop+resize': transforms.RandomResizedCrop(size=96),
                    'gray': transforms.RandomGrayscale(p=0.2),
                    'blur': transforms.GaussianBlur(kernel_size=9),
                    'rotation': transforms.RandomRotation(degrees=(0,360)),
-                   'redden': redden()}
+                   'redden': redden}
 
 t2np = lambda t: t.detach().cpu().numpy()
 
@@ -129,15 +129,14 @@ class SimCLR_container(LightningModule):
         self.automatic_optimization = False
         self.loss_function = NTXentLoss(temperature=temperature)
 
-        self.contrast_transforms = transforms.Compose([transforms_dict[transform] for transform in transforms_list] +
-                                                      [transforms.Normalize((0.5,),(0.5,))])
+        self.contrast_transforms = transforms.Compose([transforms_dict[transform] for transform in transforms_list])
 
 
         self.model = SimCLR(self.image_channels,self.encoder_out_dim)
 
     def forward(self, batch):
         x, y = batch
-        x = x.float()
+        x = x.float() / 255
         x1 = self.contrast_transforms(x)
         x2 = self.contrast_transforms(x)
         x1 = self.model(x1)
