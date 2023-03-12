@@ -13,11 +13,7 @@ CONDA_ENV_NAME=masters
 echo "Activating conda environment: ${CONDA_ENV_NAME}"
 conda activate ${CONDA_ENV_NAME}
 
-experiment_text_file=$1
-COMMAND="`sed \"${SLURM_ARRAY_TASK_ID}q;d\" ${experiment_text_file}`"
-echo "Running provided command: ${COMMAND}"
-eval "${COMMAND}"
-echo "Command ran successfully!"
+python simclr.py gray crop+resize
 
 echo ""
 echo "============"
