@@ -24,44 +24,44 @@ if __name__ == '__main__':
     root_folder = 'outputs/' + '+'.join(transforms) + '/'
     save_model_folder = root_folder + 'models/'
 
-    datamodule = GalaxyZooUnlabelled_dataset('dataset_final.pt')
+    # datamodule = GalaxyZooUnlabelled_dataset('dataset_final.pt')
 
-    model = SimCLR_container(3,1024,transforms_list=transforms)
+    # model = SimCLR_container(3,1024,transforms_list=transforms)
 
-    earlystopping_tracking = 'trn_ntxent_loss'
-    earlystopping_mode = 'min'
-    earlystopping_min_delta = 0.002
+    # earlystopping_tracking = 'trn_ntxent_loss'
+    # earlystopping_mode = 'min'
+    # earlystopping_min_delta = 0.002
 
-    checkpoint_callback = pl_callbacks.ModelCheckpoint(dirpath=save_model_folder,
-                                                       mode = earlystopping_mode,
-                                                       monitor=earlystopping_tracking,
-                                                       save_top_k=1,save_last=True,)
+    # checkpoint_callback = pl_callbacks.ModelCheckpoint(dirpath=save_model_folder,
+    #                                                    mode = earlystopping_mode,
+    #                                                    monitor=earlystopping_tracking,
+    #                                                    save_top_k=1,save_last=True,)
     
-    earlystop_callback = pl_callbacks.EarlyStopping(earlystopping_tracking,verbose=True,
-                                        mode = earlystopping_mode,
-                                        min_delta=earlystopping_min_delta,
-                                        patience=10,)
+    # earlystop_callback = pl_callbacks.EarlyStopping(earlystopping_tracking,verbose=True,
+    #                                     mode = earlystopping_mode,
+    #                                     min_delta=earlystopping_min_delta,
+    #                                     patience=10,)
 
-    trainer = Trainer(
-                    gpus=[0,],
-                    accelerator=None,
-                    max_epochs=60, min_epochs=5,
-                    default_root_dir= root_folder,
-                    fast_dev_run=False,
-                    check_val_every_n_epoch=1,
-                    callbacks=  [checkpoint_callback,
-                                earlystop_callback,],
-                    )
-    trainer.fit(model, datamodule=datamodule,)
+    # trainer = Trainer(
+    #                 gpus=[0,],
+    #                 accelerator=None,
+    #                 max_epochs=60, min_epochs=5,
+    #                 default_root_dir= root_folder,
+    #                 fast_dev_run=False,
+    #                 check_val_every_n_epoch=1,
+    #                 callbacks=  [checkpoint_callback,
+    #                             earlystop_callback,],
+    #                 )
+    # trainer.fit(model, datamodule=datamodule,)
 
-    encoder_model_file = save_model_folder+'encoder/'
-    transforms = '.'.join(transforms)
-    model_filename = f'simCLR.{transforms}.pt'
-    if not os.path.exists(encoder_model_file):
-        os.mkdir(encoder_model_file)
-    encoder_model_file += model_filename
+    # encoder_model_file = save_model_folder+'encoder/'
+    # transforms = '.'.join(transforms)
+    # model_filename = f'simCLR.{transforms}.pt'
+    # if not os.path.exists(encoder_model_file):
+    #     os.mkdir(encoder_model_file)
+    # encoder_model_file += model_filename
     
-    t.save(model.model.state_dict(),encoder_model_file)
+    # t.save(model.model.state_dict(),encoder_model_file)
 
     ##########################################################################
     #   LINEAR EVALUATION
@@ -69,48 +69,48 @@ if __name__ == '__main__':
 
     datamodule = Galaxy10_Dataset('Galaxy10.h5')
     
-    lin_Eval = LightningDSModel(3,1024,encoder_model_file,10,True,0.001)
+    # lin_Eval = LightningDSModel(3,1024,encoder_model_file,10,True,0.001)
 
-    earlystopping_tracking = 'val_loss'
-    earlystopping_mode = 'min'
-    earlystopping_min_delta = 0.0001
+    # earlystopping_tracking = 'val_loss'
+    # earlystopping_mode = 'min'
+    # earlystopping_min_delta = 0.0001
 
-    checkpoint_callback = pl_callbacks.ModelCheckpoint(dirpath=save_model_folder,
-                                                       mode = earlystopping_mode,
-                                                       monitor=earlystopping_tracking,
-                                                       save_top_k=1,save_last=True,)
+    # checkpoint_callback = pl_callbacks.ModelCheckpoint(dirpath=save_model_folder,
+    #                                                    mode = earlystopping_mode,
+    #                                                    monitor=earlystopping_tracking,
+    #                                                    save_top_k=1,save_last=True,)
     
-    earlystop_callback = pl_callbacks.EarlyStopping(earlystopping_tracking,verbose=True,
-                                        mode = earlystopping_mode,
-                                        min_delta=earlystopping_min_delta,
-                                        patience=10,)
+    # earlystop_callback = pl_callbacks.EarlyStopping(earlystopping_tracking,verbose=True,
+    #                                     mode = earlystopping_mode,
+    #                                     min_delta=earlystopping_min_delta,
+    #                                     patience=10,)
 
-    trainer = Trainer(
-                    gpus=[0,],
-                    accelerator=None,
-                    max_epochs=200, min_epochs=5,
-                    default_root_dir= root_folder,
-                    fast_dev_run=False,
-                    check_val_every_n_epoch=1,
-                    callbacks=  [checkpoint_callback,
-                                earlystop_callback,],
-                    )
+    # trainer = Trainer(
+    #                 gpus=[0,],
+    #                 accelerator=None,
+    #                 max_epochs=200, min_epochs=5,
+    #                 default_root_dir= root_folder,
+    #                 fast_dev_run=False,
+    #                 check_val_every_n_epoch=1,
+    #                 callbacks=  [checkpoint_callback,
+    #                             earlystop_callback,],
+    #                 )
 
-    trainer.fit(lin_Eval,datamodule)
+    # trainer.fit(lin_Eval,datamodule)
 
-    model_file = save_model_folder+'lin_Eval/'
-    filename = f'DSModel.{transforms[0]}.{transforms[1]}.pt'
-    if not os.path.exists(model_file):
-        os.mkdir(model_file)
-    model_file += filename
+    # model_file = save_model_folder+'lin_Eval/'
+    # filename = f'DSModel.{transforms[0]}.{transforms[1]}.pt'
+    # if not os.path.exists(model_file):
+    #     os.mkdir(model_file)
+    # model_file += filename
 
-    t.save(lin_Eval.model.state_dict(),model_file)
+    # t.save(lin_Eval.model.state_dict(),model_file)
 
     ##########################################################################
     #   FINE TUNING 
     ##########################################################################
     
-    fine_tuning = LightningDSModel(3,1024,encoder_model_file,10,False,0.001)
+    fine_tuning = LightningDSModel(3,1024,None,10,False,0.001)
     
     earlystopping_tracking = 'val_loss'
     earlystopping_mode = 'min'
@@ -137,11 +137,11 @@ if __name__ == '__main__':
                                 earlystop_callback,],
                     )
 
-    trainer.fit(lin_Eval,datamodule)
+    trainer.fit(fine_tuning,datamodule)
 
     model_file = save_model_folder+'fine_tuning/'
     filename = f'DSModel.{transforms[0]}.{transforms[1]}.pt'
     if not os.path.exists(model_file):
         os.mkdir(model_file)
     model_file+=filename 
-    t.save(lin_Eval.model.state_dict(),model_file)
+    t.save(fine_tuning.model.state_dict(),model_file)

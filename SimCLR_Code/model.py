@@ -8,21 +8,15 @@ import numpy as np
 from pytorch_lightning import LightningModule
 from sklearn.metrics import (accuracy_score,f1_score,auc,precision_recall_curve,roc_curve)
 
-def redden(image):
-    R = np.array([4.239, 3.303, 2.285, 1.698, 1.263]) 
-    ebv = np.random.uniform(0,0.5)
-    image = np.float32(image*(10.**(R*ebv/2.5)))
-    return image
 
 transforms_dict = {'crop+resize': transforms.RandomApply([transforms.RandomResizedCrop(size=96)],p=0.5),
                    'colorjitter': transforms.RandomApply([transforms.ColorJitter(brightness=0.5,
                                                                                  contrast=0.5,
                                                                                  saturation=0.5,
                                                                                  hue=0.1)], p=0.8),
-                   'gray': transforms.RandomGrayscale(p=0.2),
+                   'gray': transforms.RandomApply([transforms.RandomGrayscale(p=0.2)],p=0.5),
                    'blur': transforms.GaussianBlur(kernel_size=9),
-                   'rotation': transforms.RandomRotation(degrees=(0,360)),
-                   'redden': redden}
+                   'rotation': transforms.RandomRotation(degrees=(0,360))}
 
 t2np = lambda t: t.detach().cpu().numpy()
 
@@ -232,7 +226,9 @@ class LightningDSModel(LightningModule):
         self.automatic_optimization = False
 
         encoder = SimCLR(image_channels,encoder_output_num)
-        encoder.load_state_dict(torch.load(encoder_param_dir))
+        if encoder_param_dir:
+            encoder.load_state_dict(torch.load(encoder_param_dir))
+            self.model = DSModel(encoder,self.num_classes,self.linEval)
         self.model = DSModel(encoder,self.num_classes,self.linEval)
     
     def forward(self, data):
