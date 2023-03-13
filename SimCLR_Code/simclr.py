@@ -54,12 +54,12 @@ if __name__ == '__main__':
     #                 )
     # trainer.fit(model, datamodule=datamodule,)
 
-    # encoder_model_file = save_model_folder+'encoder/'
-    # transforms = '.'.join(transforms)
-    # model_filename = f'simCLR.{transforms}.pt'
-    # if not os.path.exists(encoder_model_file):
-    #     os.mkdir(encoder_model_file)
-    # encoder_model_file += model_filename
+    encoder_model_file = save_model_folder+'encoder/'
+    transforms = '.'.join(transforms)
+    model_filename = f'simCLR.{transforms}.pt'
+    if not os.path.exists(encoder_model_file):
+        os.mkdir(encoder_model_file)
+    encoder_model_file += model_filename
     
     # t.save(model.model.state_dict(),encoder_model_file)
 
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     #   FINE TUNING 
     ##########################################################################
     
-    fine_tuning = LightningDSModel(3,1024,None,10,False,0.001)
+    fine_tuning = LightningDSModel(3,1024,encoder_model_file,10,False,0.001)
     
     earlystopping_tracking = 'val_loss'
     earlystopping_mode = 'min'

@@ -1,0 +1,6 @@
+encoder_output_num: 1024
+encoder_param_dir: outputs/gray+crop+resize/models/encoder/simCLR.gray.crop+resize.pt
+image_channels: 3
+linEval: false
+lr: 0.001
+num_classes: 10
