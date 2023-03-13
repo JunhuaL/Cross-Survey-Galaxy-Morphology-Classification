@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     earlystopping_tracking = 'trn_ntxent_loss'
     earlystopping_mode = 'min'
-    earlystopping_min_delta = 0.0001
+    earlystopping_min_delta = 0.002
 
     checkpoint_callback = pl_callbacks.ModelCheckpoint(dirpath=save_model_folder,
                                                        mode = earlystopping_mode,
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     trainer = Trainer(
                     gpus=[0,],
                     accelerator=None,
-                    max_epochs=200, min_epochs=5,
+                    max_epochs=60, min_epochs=5,
                     default_root_dir= root_folder,
                     fast_dev_run=False,
                     check_val_every_n_epoch=1,
