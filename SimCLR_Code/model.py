@@ -23,11 +23,11 @@ transforms_dict = {'crop+resize': transforms.RandomApply([transforms.RandomResiz
                    'colorjitter': transforms.RandomApply([transforms.ColorJitter(brightness=0.5,
                                                                                  contrast=0.5,
                                                                                  saturation=0.5,
-                                                                                 hue=0.1)], p=0.8),
+                                                                                 hue=0.1)], p=0.5),
                    'gray': transforms.RandomApply([transforms.RandomGrayscale(p=0.2)],p=0.5),
                    'blur': transforms.GaussianBlur(kernel_size=9),
                    'rotation': transforms.RandomRotation(degrees=(0,360)),
-                   'gauss_noise': GaussianNoise(mean=0, std=0.05)}
+                   'gauss_noise': transforms.RandomApply([GaussianNoise(mean=0, std=0.05)],p=0.5)}
 
 t2np = lambda t: t.detach().cpu().numpy()
 
