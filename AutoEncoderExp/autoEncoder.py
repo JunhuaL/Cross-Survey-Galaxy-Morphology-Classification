@@ -8,9 +8,6 @@ from sklearn.metrics import (accuracy_score,f1_score,auc,precision_recall_curve,
 
 t2np = lambda t: t.detach().cpu().numpy()
 
-
-
-
 class Decoder(nn.Module):
     def __init__(self, inputDim):
         super(Decoder, self).__init__()
@@ -238,7 +235,7 @@ class DSModelLightning(LightningModule):
         self.loss_function = nn.CrossEntropyLoss()
         self.automatic_optimization = False     
 
-        autoEncoder = ConvAutoencoder(encoder_output_num)
+        autoEncoder = ResNet_18(encoder_output_num)
         autoEncoder.load_state_dict(torch.load(autoencoder_param_dir))
         self.model = DSModel(autoEncoder, num_classes, encoder_output_num, linEval)
 

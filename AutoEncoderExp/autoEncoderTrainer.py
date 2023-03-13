@@ -56,7 +56,7 @@ if __name__ == '__main__':
         os.mkdir(encoder_model_file)
     encoder_model_file += model_filename
 
-    torch.save(model.model.state_dict(), encoder_model_file)
+    torch.save(model.model.encoder.state_dict(), encoder_model_file)
     
     ##########################################################################
     #   LINEAR EVALUATION
@@ -104,7 +104,7 @@ if __name__ == '__main__':
     #   FINE TUNING 
     ##########################################################################
     
-    lin_Eval = DSModelLightning(10,latent_size,False,learning_rate,encoder_model_file)
+    fine_tuning = DSModelLightning(10,latent_size,False,learning_rate,encoder_model_file)
     
     earlystopping_tracking = 'val_loss'
     earlystopping_mode = 'min'
@@ -131,7 +131,7 @@ if __name__ == '__main__':
                                 earlystop_callback,],
                     )
 
-    trainer.fit(lin_Eval,datamodule)
+    trainer.fit(fine_tuning,datamodule)
 
     model_file = save_model_folder+'fine_tuning/'
     filename = f'DSModel.{latent_size}.pt'
