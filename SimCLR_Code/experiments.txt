@@ -1,4 +1,12 @@
-python simclr.py crop+resize colorjitter
-python simclr.py crop+resize gray
-python simclr.py crop+resize crop+resize
-
+python simclr.py gauss_noise crop+resize
+python simclr.py gauss_noise colorjitter
+python simclr.py gauss_noise gray
+python simclr.py gauss_noise blur
+python simclr.py gauss_noise rotation
+python simclr.py gauss_noise gauss_noise
+python simclr.py rotation crop+resize
+python simclr.py rotation colorjitter
+python simclr.py rotation gray
+python simclr.py rotation blur
+python simclr.py rotation rotation
+python simclr.py rotation gauss_noise

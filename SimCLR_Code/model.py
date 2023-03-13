@@ -8,7 +8,17 @@ import numpy as np
 from pytorch_lightning import LightningModule
 from sklearn.metrics import (accuracy_score,f1_score,auc,precision_recall_curve,roc_curve)
 
+class GaussianNoise:
+    def __init__(self,mean=0.,std=0.1):
+        self.std = std
+        self.mean = mean
 
+    def __call__(self,tensor):
+        return tensor + torch.randn(tensor.size()) * self.std + self.mean
+    
+    def __repr__(self):
+        return self.__class__.__name__ + f'(mean={self.mean},std={self.std})'
+    
 transforms_dict = {'crop+resize': transforms.RandomApply([transforms.RandomResizedCrop(size=96)],p=0.5),
                    'colorjitter': transforms.RandomApply([transforms.ColorJitter(brightness=0.5,
                                                                                  contrast=0.5,
@@ -16,7 +26,8 @@ transforms_dict = {'crop+resize': transforms.RandomApply([transforms.RandomResiz
                                                                                  hue=0.1)], p=0.8),
                    'gray': transforms.RandomApply([transforms.RandomGrayscale(p=0.2)],p=0.5),
                    'blur': transforms.GaussianBlur(kernel_size=9),
-                   'rotation': transforms.RandomRotation(degrees=(0,360))}
+                   'rotation': transforms.RandomRotation(degrees=(0,360)),
+                   'gauss_noise': GaussianNoise(mean=0, std=0.05)}
 
 t2np = lambda t: t.detach().cpu().numpy()
 
