@@ -6,35 +6,37 @@ import torch.nn.functional as F
 import numpy as np
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
-# from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.utils import to_categorical
 
 
 
-# from astroNN.datasets import galaxy10
-# from astroNN.datasets.galaxy10 import galaxy10cls_lookup
+from astroNN.datasets import galaxy10
+from astroNN.datasets.galaxy10 import galaxy10cls_lookup
 
 from resNet18 import ResNet_18
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 
 # Import data
 
-# images, labels = galaxy10.load_data()
-# labels = labels.astype(np.float32)
-# labels = to_categorical(labels)
-# images = images.astype(np.float32)
-# images = images/255
-# images = images.transpose((0,3, 1, 2))
-images = torch.load('dataset_final.pt').share_memory_()
-images = torch.permute(images, (0,3,1,2))
+images, labels = galaxy10.load_data()
+labels = labels.astype(np.float32)
+labels = to_categorical(labels)
+images = images.astype(np.float32)
+images = images/255
+images = images.transpose((0,3, 1, 2))
+# images = torch.load('dataset_final.pt').share_memory_()
+# images = torch.permute(images, (0,3,1,2))
 
-labels = torch.zeros(images.size(0)).share_memory_()
+# labels = torch.zeros(images.size(0)).share_memory_()
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Create DataLoader
 
-# X = torch.from_numpy(images)
-# y = torch.from_numpy(labels)
+images = torch.from_numpy(images)
+labels = torch.from_numpy(labels)
 X_train, X_test, y_train, y_test = train_test_split(images, labels, test_size = 0.20)
 
 
@@ -133,44 +135,45 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 
 EPOCHS = 100
-for epoch in (range(1, EPOCHS+1)):
-    train_loss = 0.0
-    for data in tqdm(trainLoader):
-        images, _ = data
-        images = images.to(device)
-        images = images.float()
-        outputs = model(images)
-#         print(outputs.shape)
-#         print(images.shape)
-#         print(images.shape)
-#         print(outputs.shape)
-        loss = criterion(outputs, images)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+# for epoch in (range(1, EPOCHS+1)):
+#     train_loss = 0.0
+#     for data in tqdm(trainLoader):
+#         images, _ = data
+#         images = images.to(device)
+#         images = images.float()
+#         outputs = model(images)
+# #         print(outputs.shape)
+# #         print(images.shape)
+# #         print(images.shape)
+# #         print(outputs.shape)
+#         loss = criterion(outputs, images)
+#         optimizer.zero_grad()
+#         loss.backward()
+#         optimizer.step()
         
-        train_loss += loss.item()*images.size(0)
+#         train_loss += loss.item()*images.size(0)
         
-    train_loss = train_loss/len(trainLoader)
+#     train_loss = train_loss/len(trainLoader)
     
-    print('Epoch: {} \tTraining Loss: {:.6f}'.format(
-        epoch, 
-        train_loss
-        ))
+#     print('Epoch: {} \tTraining Loss: {:.6f}'.format(
+#         epoch, 
+#         train_loss
+#         ))
         
                 
 ###########################  FINE TUNNING/ LINEAR EVALUATION #########################
 
-linEval = True
+linEval = False
 
 
-DSmodel = DSModel(model,10).to(device)
+DSmodel = DSModel(model,10, linEval).to(device)
 optimizer = torch.optim.Adam(DSmodel.parameters(), lr=0.001)
 criterion = nn.CrossEntropyLoss()
 
 
 
 for epoch in range(EPOCHS):
+    train_running_correct = 0
     for data in trainLoader:
         
         x,y = data
@@ -180,13 +183,20 @@ for epoch in range(EPOCHS):
         y = y.to(device)
         
         outputs = DSmodel(x)
+
+        _, preds = torch.max(outputs.data, 1)
+        _, trueLabels = torch.max(y,1)
+        train_running_correct += (preds == trueLabels).sum().item()
+
+
         loss = criterion(outputs,y)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         
         
-        
+    epoch_acc = 100. * (train_running_correct / len(trainLoader.dataset))
+    print(f'train accuracy for this epoch {epoch + 1} is {epoch_acc}')    
     print(f'loss for this epoch {epoch + 1} is {loss.tolist()}')
 
 
