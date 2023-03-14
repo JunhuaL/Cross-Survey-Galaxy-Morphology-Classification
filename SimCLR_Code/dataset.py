@@ -13,12 +13,13 @@ from pytorch_lightning import LightningDataModule
 import h5py
 
 class Galaxy10_Dataset(LightningDataModule):
-    def __init__(self,datadir,batch_size = 32):
+    def __init__(self,datadir,batch_size = 32,dataNumPerClass = None):
         super(Galaxy10_Dataset).__init__()
         self.file_path = datadir
         self.batch_size = batch_size
         self.prepare_data_per_node = False
         self._log_hyperparams = True
+        self.dataCount = dataNumPerClass
 
     def prepare_data(self):
         pass
@@ -38,6 +39,10 @@ class Galaxy10_Dataset(LightningDataModule):
         labels = torch.from_numpy(labels)
         X_train, X_test, y_train, y_test = train_test_split(images,labels, test_size = 0.2)
         X_valid, X_test, y_valid, y_test = train_test_split(X_test,y_test, test_size = 0.5)
+
+        X_train, y_train = getBalanceDataset(X_train,y_train,self.dataCount)
+        print(X_train.shape)
+        print(y_train.shape)
 
         self.train = TensorDataset(X_train,y_train)
         self.valid = TensorDataset(X_valid,y_valid)
@@ -87,3 +92,48 @@ class GalaxyZooUnlabelled_dataset(LightningDataModule):
 
     def test_dataloader(self):
         return DataLoader(self.test, batch_size = 8, shuffle=True)
+
+
+
+t2np = lambda t: t.detach().cpu().numpy()
+def getBalanceDataset(X,y,dataCount):
+    
+    X = t2np(X)
+    y = t2np(y)
+    
+    if(len(y.shape) == 2):
+        y = y.argmax(axis=1)
+    
+    if(dataCount == None):
+        # Get the second small class count
+        labelCounts = np.unique(y, return_counts=True)[1]
+        labelCounts.sort()
+        dataCount = labelCounts[1]
+    
+    print(f'dataCount is {dataCount}')
+        
+    dataCountDic = [dataCount] * len(y)
+    
+    X_balanced = []
+    y_balanced = []
+    
+    for i in range(len(y)):
+        image = X[i]
+        label = int(y[i])
+        if(dataCountDic[label] > 0):
+            X_balanced.append(image)
+            y_balanced.append(label)
+            
+            dataCountDic[label] = dataCountDic[label] - 1
+            
+    X_balanced = np.array(X_balanced)
+    y_balanced = np.array(y_balanced)
+
+
+    y_balanced = np.eye(10)[y_balanced]
+    
+    
+    X_balanced = torch.from_numpy(X_balanced)
+    y_balanced = torch.from_numpy(y_balanced)
+    
+    return X_balanced, y_balanced
