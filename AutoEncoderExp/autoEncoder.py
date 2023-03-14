@@ -235,8 +235,10 @@ class DSModelLightning(LightningModule):
         self.loss_function = nn.CrossEntropyLoss()
         self.automatic_optimization = False     
 
-        autoEncoder = ResNet_18(encoder_output_num)
-        autoEncoder.load_state_dict(torch.load(autoencoder_param_dir))
+        autoEncoder = ConvAutoencoder(encoder_output_num)
+        # autoEncoder.load_state_dict(torch.load(autoencoder_param_dir))
+        if autoencoder_param_dir:
+            autoEncoder.load_state_dict(torch.load(autoencoder_param_dir))
         self.model = DSModel(autoEncoder, num_classes, encoder_output_num, linEval)
 
 
@@ -246,9 +248,14 @@ class DSModelLightning(LightningModule):
 
     def training_step(self, batch, batch_idx):
         X,y = batch
+        opt = self.optimizers()
+        opt.zero_grad()
         outputs = self.forward(batch)
         loss = self.loss_function(outputs, y)
+        self.manual_backward(loss)
+        opt.step()
         return_dict = {'loss':loss,'y_out':t2np(outputs),'y':t2np(y)}
+        
         return return_dict
 
     def validation_step(self, batch, batch_idx):
@@ -264,6 +271,21 @@ class DSModelLightning(LightningModule):
         loss = self.loss_function(outputs,y)
         return_dict = {'loss':loss,'y_out':t2np(outputs),'y':t2np(y)}
         return return_dict
+
+    def training_epoch_end(self, outputs):
+        epoch = self.current_epoch
+        y_out = np.concatenate([x['y_out'] for x in outputs])
+        y = np.concatenate([x['y'] for x in outputs])
+        losses = np.array([x['loss'].cpu().item() for x in outputs])
+        loss = sum(losses) / len(losses)
+        y_pred = y_out.argmax(axis=1)
+        y_true = y.argmax(axis=1)
+        perf_dict = {}
+        perf_dict['F1']  = f1_score(y_true,y_pred,average='macro')
+        perf_dict['Acc']  = accuracy_score(y_true,y_pred)
+        perf_dict['loss'] = loss
+        self.log('trn_perf',perf_dict)
+        print("\nepoch_trn:Ep%d || Loss:%.03f Accuracy:%.03f F1:%.03f\n"%(epoch,loss,perf_dict['Acc'],perf_dict['F1']))
 
     def validation_epoch_end(self, outputs):
         epoch = self.current_epoch
