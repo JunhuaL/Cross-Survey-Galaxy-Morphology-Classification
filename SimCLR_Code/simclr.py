@@ -68,7 +68,8 @@ if __name__ == '__main__':
     #   LINEAR EVALUATION
     ##########################################################################
 
-    datamodule = Galaxy10_Dataset('Galaxy10.h5')
+    # Change none to number of data per class
+    datamodule = Galaxy10_Dataset('Galaxy10.h5',None)
     
     lin_Eval = LightningDSModel(3,1024,encoder_model_file,10,True,0.001)
 
