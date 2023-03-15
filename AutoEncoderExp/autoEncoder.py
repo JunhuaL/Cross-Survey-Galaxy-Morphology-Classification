@@ -5,6 +5,8 @@ import numpy as np
 from pytorch_lightning import LightningModule
 from resNet18 import ResNet_18
 from sklearn.metrics import (accuracy_score,f1_score,auc,precision_recall_curve,roc_curve)
+import torch.optim as optim 
+
 
 t2np = lambda t: t.detach().cpu().numpy()
 
@@ -273,6 +275,10 @@ class DSModelLightning(LightningModule):
         return return_dict
 
     def training_epoch_end(self, outputs):
+
+        sch = self.lr_schedulers()
+        sch.step()
+
         epoch = self.current_epoch
         y_out = np.concatenate([x['y_out'] for x in outputs])
         y = np.concatenate([x['y'] for x in outputs])
@@ -320,4 +326,5 @@ class DSModelLightning(LightningModule):
         
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.model.parameters(),lr=self.lr)
-        return optimizer    
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, 200, eta_min = 1e-08)
+        return [optimizer], [scheduler]    
