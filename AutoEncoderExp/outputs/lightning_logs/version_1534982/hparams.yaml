@@ -1,0 +1,5 @@
+autoencoder_param_dir: null
+encoder_output_num: 128
+linEval: false
+lr: 0.01
+num_classes: 10
