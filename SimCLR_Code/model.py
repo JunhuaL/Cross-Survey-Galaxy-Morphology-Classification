@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from pytorch_lightning import LightningModule
-from sklearn.metrics import (accuracy_score,f1_score,auc,precision_recall_curve,roc_curve)
+from sklearn.metrics import (balanced_accuracy_score,accuracy_score,f1_score,auc,precision_recall_curve,roc_curve)
 
 class GaussianNoise:
     def __init__(self,mean=0.,std=0.1):
@@ -14,7 +14,7 @@ class GaussianNoise:
         self.mean = mean
 
     def __call__(self,tensor):
-        return tensor + torch.cuda.FloatTensor(tensor.size()).normal_() * self.std + self.mean
+        return tensor.cuda() + torch.cuda.FloatTensor(tensor.size()).normal_() * self.std + self.mean
     
     def __repr__(self):
         return self.__class__.__name__ + f'(mean={self.mean},std={self.std})'
@@ -25,9 +25,10 @@ transforms_dict = {'crop+resize': transforms.RandomApply([transforms.RandomResiz
                                                                                  saturation=0.5,
                                                                                  hue=0.1)], p=0.5),
                    'gray': transforms.RandomApply([transforms.RandomGrayscale(p=0.2)],p=0.5),
-                   'blur': transforms.GaussianBlur(kernel_size=9),
+                   'blur': transforms.RandomApply([transforms.GaussianBlur(kernel_size=9)],p=0.5),
                    'rotation': transforms.RandomRotation(degrees=(0,360)),
-                   'gauss_noise': transforms.RandomApply([GaussianNoise(mean=0, std=0.05)],p=0.5)}
+                   'gauss_noise': transforms.RandomApply([GaussianNoise(mean=0, std=0.05)],p=0.5)
+                   }
 
 t2np = lambda t: t.detach().cpu().numpy()
 
@@ -280,11 +281,14 @@ class LightningDSModel(LightningModule):
         y_pred = y_out.argmax(axis=1)
         y_true = y.argmax(axis=1)
         perf_dict = {}
-        perf_dict['F1']  = f1_score(y_true,y_pred,average='macro')
-        perf_dict['Acc']  = accuracy_score(y_true,y_pred)
+        perf_dict['Micro_F1'] = f1_score(y_true,y_pred,average='micro')
+        perf_dict['Macro_F1']  = f1_score(y_true,y_pred,average='macro')
+        perf_dict['Micro_Acc']  = accuracy_score(y_true,y_pred)
+        perf_dict['Macro_Acc'] = balanced_accuracy_score(y_true,y_pred)
         perf_dict['loss'] = loss
         self.log('trn_perf',perf_dict)
-        print("\nepoch_trn:Ep%d || Loss:%.03f Accuracy:%.03f F1:%.03f\n"%(epoch,loss,perf_dict['Acc'],perf_dict['F1']))
+        print("\nepoch_tst:Ep%d || Loss:%.03f Macro Accuracy:%.03f Micro Accuracy:%.03f Macro F1:%.03f Micro F1:%.03f\n"%
+              (epoch,loss,perf_dict['Macro_Acc'],perf_dict['Micro_Acc'],perf_dict['Macro_F1'],perf_dict['Micro_F1']))
 
     def validation_epoch_end(self, outputs):
         epoch = self.current_epoch
@@ -295,12 +299,15 @@ class LightningDSModel(LightningModule):
         y_pred = y_out.argmax(axis=1)
         y_true = y.argmax(axis=1)
         perf_dict = {}
-        perf_dict['F1']  = f1_score(y_true,y_pred,average='macro')
-        perf_dict['Acc']  = accuracy_score(y_true,y_pred)
+        perf_dict['Micro_F1'] = f1_score(y_true,y_pred,average='micro')
+        perf_dict['Macro_F1']  = f1_score(y_true,y_pred,average='macro')
+        perf_dict['Micro_Acc']  = accuracy_score(y_true,y_pred)
+        perf_dict['Macro_Acc'] = balanced_accuracy_score(y_true,y_pred)
         perf_dict['loss'] = loss
         self.log('val_perf',perf_dict)
         self.log('val_loss',loss)
-        print("\nepoch_val:Ep%d || Loss:%.03f Accuracy:%.03f F1:%.03f\n"%(epoch,loss,perf_dict['Acc'],perf_dict['F1']))
+        print("\nepoch_tst:Ep%d || Loss:%.03f Macro Accuracy:%.03f Micro Accuracy:%.03f Macro F1:%.03f Micro F1:%.03f\n"%
+              (epoch,loss,perf_dict['Macro_Acc'],perf_dict['Micro_Acc'],perf_dict['Macro_F1'],perf_dict['Micro_F1']))
 
     def test_epoch_end(self, outputs):
         epoch = self.current_epoch
@@ -311,11 +318,14 @@ class LightningDSModel(LightningModule):
         y_pred = y_out.argmax(axis=1)
         y_true = y.argmax(axis=1)
         perf_dict = {}
-        perf_dict['F1']  = f1_score(y_true,y_pred,average='macro')
-        perf_dict['Acc']  = accuracy_score(y_true,y_pred)
+        perf_dict['Micro_F1'] = f1_score(y_true,y_pred,average='micro')
+        perf_dict['Macro_F1']  = f1_score(y_true,y_pred,average='macro')
+        perf_dict['Micro_Acc']  = accuracy_score(y_true,y_pred)
+        perf_dict['Macro_Acc'] = balanced_accuracy_score(y_true,y_pred)
         perf_dict['loss'] = loss
         self.log('test_perf',perf_dict)
-        print("\nepoch_tst:Ep%d || Loss:%.03f Accuracy:%.03f F1:%.03f\n"%(epoch,loss,perf_dict['Acc'],perf_dict['F1']))
+        print("\nepoch_tst:Ep%d || Loss:%.03f Macro Accuracy:%.03f Micro Accuracy:%.03f Macro F1:%.03f Micro F1:%.03f\n"%
+              (epoch,loss,perf_dict['Macro_Acc'],perf_dict['Micro_Acc'],perf_dict['Macro_F1'],perf_dict['Micro_F1']))
         
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.model.parameters(),lr=self.lr)
