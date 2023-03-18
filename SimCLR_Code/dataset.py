@@ -153,7 +153,7 @@ def getBalanceDataset(X,y,dataCount,transforms_list):
         
     up_sampled_imgs = torch.from_numpy(np.concatenate(up_sampled_imgs)).cuda()
     up_sampled_labels = torch.from_numpy(np.concatenate(up_sampled_labels)).cuda()
-    up_sampled_imgs = data_aug(up_sampled_imgs)
+    up_sampled_imgs = torch.from_numpy(np.array([t2np(data_aug(img)) for img in up_sampled_imgs])).cuda()
     
     X_balanced = np.array(X_balanced)
     y_balanced = np.array(y_balanced)
