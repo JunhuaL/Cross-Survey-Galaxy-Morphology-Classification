@@ -21,11 +21,11 @@ if __name__ == '__main__':
     transforms = sys.argv[1:]
     print("applying these data augmentations: ",transforms)
 
-    root_folder = 'outputs/' + '+'.join(transforms) + '/'
+    root_folder = 'outputs/final/' + '+'.join(transforms) + '/'
     save_model_folder = root_folder + 'models/'
 
-    #datamodule = GalaxyZooUnlabelled_dataset('dataset_final.pt')
-    datamodule = Galaxy10_Dataset('Galaxy10.h5')
+    datamodule = GalaxyZooUnlabelled_dataset('dataset_final.pt')
+    #datamodule = Galaxy10_Dataset('Galaxy10.h5')
 
     model = SimCLR_container(3,1024,transforms_list=transforms)
 
