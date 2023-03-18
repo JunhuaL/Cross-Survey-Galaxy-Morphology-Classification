@@ -10,6 +10,50 @@ import h5py
 from ResNet import ResNet_18
 
 
+t2np = lambda t: t.detach().cpu().numpy()
+def getBalanceDataset(X,y,dataCount):
+    
+    X = t2np(X)
+    y = t2np(y)
+    
+    if(len(y.shape) == 2):
+        y = y.argmax(axis=1)
+    
+    if(dataCount == None):
+        # Get the second small class count
+        labelCounts = np.unique(y, return_counts=True)[1]
+        labelCounts.sort()
+        dataCount = labelCounts[0]
+    
+    print(f'dataCount is {dataCount}')
+        
+    dataCountDic = [dataCount] * len(y)
+    
+    X_balanced = []
+    y_balanced = []
+    
+    for i in range(len(y)):
+        image = X[i]
+        label = int(y[i])
+        if(dataCountDic[label] > 0):
+            X_balanced.append(image)
+            y_balanced.append(label)
+            
+            dataCountDic[label] = dataCountDic[label] - 1
+            
+    X_balanced = np.array(X_balanced)
+    y_balanced = np.array(y_balanced)
+
+
+    y_balanced = np.eye(10)[y_balanced]
+    
+    
+    X_balanced = torch.from_numpy(X_balanced)
+    y_balanced = torch.from_numpy(y_balanced)
+    
+    return X_balanced, y_balanced
+
+
 print("loading data")
 
 with h5py.File('Galaxy10_DECals.h5', 'r') as F:
@@ -37,6 +81,8 @@ labels = torch.from_numpy(labels).share_memory_()
 
 X_train,X_test,y_train,y_test = train_test_split(images,labels,test_size=0.2)
 
+X_train, y_train  = getBalanceDataset(X_train, y_train, None)
+
 print("loaded to tensor")
 print("loading training set dataloader")
 train_set = TensorDataset(X_train,y_train)
@@ -49,13 +95,14 @@ testLoader = DataLoader(test_set, batch_size = 32, shuffle=True)
 print("complete loading test set dataloader")
 
 learning_rate = 0.001
-EPOCHS = 20
+EPOCHS = 40
 scheduler_patience = 5
 
 net = ResNet_18(3,10).to(device)
 criterion = nn.CrossEntropyLoss().to(device)
-optimizer = optim.Adam(net.parameters(), lr=learning_rate, weight_decay = 1e-3)
-lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=scheduler_patience, verbose=True)
+optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+# lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=scheduler_patience, verbose=True)
+lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, 200, eta_min = 1e-08)
 
 
 def test():
@@ -125,7 +172,7 @@ for epoch in range(EPOCHS):
     print(f'train accuracy for this epoch {epoch + 1} is {epoch_acc}')
     train_acc.append(epoch_acc)
     train_loss.append(mean_loss)
-    lr_scheduler.step(mean_loss)
+    lr_scheduler.step()
 
 
 
