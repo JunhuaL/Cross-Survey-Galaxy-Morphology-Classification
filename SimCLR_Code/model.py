@@ -85,7 +85,7 @@ class ResNet_18(nn.Module):
             Block(out_channels, out_channels)
         )
         
-    def forward(self, x):        
+    def forward(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -118,6 +118,7 @@ class SimCLR(nn.Module):
         )
         
     def forward(self,x):
+        x = x.float()
         x = self.encoder(x)
         x = self.projection(x) 
         return x
