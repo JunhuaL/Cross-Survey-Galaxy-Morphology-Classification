@@ -33,7 +33,7 @@ class Galaxy10_Dataset(LightningDataModule):
         labels = np.eye(10)[labels]
         labels = labels.astype(np.float32)
         images = images.astype(np.float32)
-        # images = images/255
+        images = images/255
         images = images.transpose((0,3,1,2))
 
         images = torch.from_numpy(images)
@@ -76,8 +76,8 @@ class GalaxyZooUnlabbel_dataset(LightningDataModule):
 
         labels = torch.zeros(dataset.size(0)).share_memory_()
 
-        X_train, X_test, y_train, y_test = train_test_split(dataset,labels, test_size = 0.002)
-        X_valid, X_test, y_valid, y_test = train_test_split(X_test,y_test, test_size = 0.3)
+        X_train, X_test, y_train, y_test = train_test_split(dataset,labels, test_size = 0.1)
+        X_valid, X_test, y_valid, y_test = train_test_split(X_test,y_test, test_size = 0.5)
         
         self.train = TensorDataset(X_train,y_train)
         self.valid = TensorDataset(X_valid,y_valid)

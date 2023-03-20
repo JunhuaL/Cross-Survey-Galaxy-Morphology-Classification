@@ -133,6 +133,7 @@ class ConvAutoencoder(nn.Module):
 
     def forward(self, x):
         x = x.float()
+        x = x/255.0
         ## encode ##
         # add hidden layers with relu activation function
         # and maxpooling after
