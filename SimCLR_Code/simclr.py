@@ -24,45 +24,45 @@ if __name__ == '__main__':
     root_folder = 'outputs/final/' + '+'.join(transforms) + '/'
     save_model_folder = root_folder + 'models/'
 
-    datamodule = GalaxyZooUnlabelled_dataset('dataset_final.pt')
-    #datamodule = Galaxy10_Dataset('Galaxy10.h5')
+    # datamodule = GalaxyZooUnlabelled_dataset('dataset_final.pt')
+    # #datamodule = Galaxy10_Dataset('Galaxy10.h5')
 
-    model = SimCLR_container(3,1024,transforms_list=transforms)
+    # model = SimCLR_container(3,1024,transforms_list=transforms)
 
-    earlystopping_tracking = 'trn_ntxent_loss'
-    earlystopping_mode = 'min'
-    earlystopping_min_delta = 0.002
+    # earlystopping_tracking = 'trn_ntxent_loss'
+    # earlystopping_mode = 'min'
+    # earlystopping_min_delta = 0.002
 
-    checkpoint_callback = pl_callbacks.ModelCheckpoint(dirpath=save_model_folder,
-                                                       mode = earlystopping_mode,
-                                                       monitor=earlystopping_tracking,
-                                                       save_top_k=1,save_last=True,)
+    # checkpoint_callback = pl_callbacks.ModelCheckpoint(dirpath=save_model_folder,
+    #                                                    mode = earlystopping_mode,
+    #                                                    monitor=earlystopping_tracking,
+    #                                                    save_top_k=1,save_last=True,)
     
-    earlystop_callback = pl_callbacks.EarlyStopping(earlystopping_tracking,verbose=True,
-                                        mode = earlystopping_mode,
-                                        min_delta=earlystopping_min_delta,
-                                        patience=10,)
+    # earlystop_callback = pl_callbacks.EarlyStopping(earlystopping_tracking,verbose=True,
+    #                                     mode = earlystopping_mode,
+    #                                     min_delta=earlystopping_min_delta,
+    #                                     patience=10,)
 
-    trainer = Trainer(
-                    gpus=[0,],
-                    accelerator=None,
-                    max_epochs=60, min_epochs=5,
-                    default_root_dir= root_folder,
-                    fast_dev_run=False,
-                    check_val_every_n_epoch=1,
-                    callbacks=  [checkpoint_callback,
-                                earlystop_callback,],
-                    )
-    trainer.fit(model, datamodule=datamodule,)
+    # trainer = Trainer(
+    #                 gpus=[0,],
+    #                 accelerator=None,
+    #                 max_epochs=60, min_epochs=5,
+    #                 default_root_dir= root_folder,
+    #                 fast_dev_run=False,
+    #                 check_val_every_n_epoch=1,
+    #                 callbacks=  [checkpoint_callback,
+    #                             earlystop_callback,],
+    #                 )
+    # trainer.fit(model, datamodule=datamodule,)
 
     encoder_model_file = save_model_folder+'encoder/'
     transforms = '.'.join(transforms)
     model_filename = f'simCLR.{transforms}.pt'
-    if not os.path.exists(encoder_model_file):
-        os.mkdir(encoder_model_file)
+    # if not os.path.exists(encoder_model_file):
+    #     os.mkdir(encoder_model_file)
     encoder_model_file += model_filename
     
-    t.save(model.model.state_dict(),encoder_model_file)
+    # t.save(model.model.state_dict(),encoder_model_file)
 
     ##########################################################################
     #   LINEAR EVALUATION
@@ -70,6 +70,12 @@ if __name__ == '__main__':
 
     # Change none to number of data per class
     datamodule = Galaxy10_Dataset('Galaxy10.h5',None)
+    # datamodule = Galaxy10_Dataset('Galaxy10.h5',40)
+    # datamodule = Galaxy10_Dataset('Galaxy10.h5',4)
+    # datamodule = Galaxy10_Dataset('Galaxy10_DECals.h5',None)
+    # datamodule = Galaxy10_Dataset('Galaxy10_DECals.h5',334)
+    # datamodule = Galaxy10_Dataset('Galaxy10_DECals.h5',33)
+    # datamodule = Galaxy10_Dataset('Galaxy10_DECals.h5',3)
     
     lin_Eval = LightningDSModel(3,1024,encoder_model_file,10,True,0.001)
 
