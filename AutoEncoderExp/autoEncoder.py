@@ -222,6 +222,8 @@ class DSModel(nn.Module):
         self.lastlayer = nn.Linear(encoder_output_num,self.num_classes)
         
     def forward(self,x):
+        x = x.float()
+        x = x/255
         x = self.Encoder(x)
         x = self.lastlayer(x)
         
@@ -332,5 +334,5 @@ class DSModelLightning(LightningModule):
         
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.model.parameters(),lr=self.lr)
-        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, 200, eta_min = 1e-08)
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, 40, eta_min = 1e-08)
         return [optimizer], [scheduler]    

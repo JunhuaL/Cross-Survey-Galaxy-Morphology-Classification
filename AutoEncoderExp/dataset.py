@@ -48,16 +48,25 @@ class Galaxy10_Dataset(LightningDataModule):
             labels = np.array(F['ans'])
         
         labels = np.eye(10)[labels]
-        labels = labels.astype(np.float32)
-        images = images.astype(np.float32)
-        images = images/255
+        # labels = labels.astype(np.float16)
+        # images = images.astype(np.float16)
+        # images = images/255
         images = images.transpose((0,3,1,2))
 
         images = torch.from_numpy(images)
         labels = torch.from_numpy(labels)
         X_train, X_test, y_train, y_test = train_test_split(images,labels, test_size = 0.2)
-        X_train, y_train = getBalanceDataset(X_train,y_train,self.dataCount,['colorjitter','rotation','gauss_noise'])
+        # X_train, y_train = getBalanceDataset(X_train,y_train,None,['colorjitter','rotation','gauss_noise'])
+
+        print(X_train.size())
+        print(y_train.size())
+        
         X_train, X_valid, y_train, y_valid = train_test_split(X_train,y_train, test_size = 0.1)
+
+        print(f'validation data size is {X_valid.size()}')
+
+
+        # X_train, y_train = getBalanceDataset(X_train,y_train,int(self.dataCount*0.9),['colorjitter','rotation','gauss_noise'])
 
 
         print(X_train.shape)
@@ -67,13 +76,13 @@ class Galaxy10_Dataset(LightningDataModule):
         self.test = TensorDataset(X_test,y_test)
     
     def train_dataloader(self):
-        return DataLoader(self.train, batch_size = 32, shuffle=True)
+        return DataLoader(self.train, batch_size = self.batch_size, shuffle=True)
     
     def val_dataloader(self):
-        return DataLoader(self.valid, batch_size = 32, shuffle=True)
+        return DataLoader(self.valid, batch_size = self.batch_size, shuffle=True)
     
     def test_dataloader(self):
-        return DataLoader(self.test, batch_size = 32, shuffle=True)
+        return DataLoader(self.test, batch_size = self.batch_size, shuffle=True)
 
 
 class GalaxyZooUnlabbel_dataset(LightningDataModule):
@@ -118,8 +127,8 @@ class GalaxyZooUnlabbel_dataset(LightningDataModule):
 
 t2np = lambda t: t.detach().cpu().numpy()
 def getBalanceDataset(X,y,dataCount,transforms_list):
-    X = t2np(X)
-    y = t2np(y)
+    # X = t2np(X)
+    # y = t2np(y)
     data_aug = transforms.Compose([transforms_dict[transform] for transform in transforms_list])
     
     if(len(y.shape) == 2):
@@ -128,7 +137,7 @@ def getBalanceDataset(X,y,dataCount,transforms_list):
         # Get the second small class count
         labelCounts = np.unique(labels, return_counts=True)[1]
         labelCounts.sort()
-        dataCount = labelCounts[1]
+        dataCount = labelCounts[0]
     
     dataCountDic = [dataCount] * y.shape[1]
     
@@ -163,7 +172,7 @@ def getBalanceDataset(X,y,dataCount,transforms_list):
     X_balanced = np.array(X_balanced)
     y_balanced = np.array(y_balanced)
     y_balanced = np.eye(10)[y_balanced]
-    X_balanced = torch.from_numpy(X_balanced).cuda()
-    y_balanced = torch.from_numpy(y_balanced).cuda()
+    # X_balanced = torch.from_numpy(X_balanced).cuda()
+    # y_balanced = torch.from_numpy(y_balanced).cuda()
     
     return torch.cat((X_balanced,up_sampled_imgs),0), torch.cat((y_balanced,up_sampled_labels),0)
