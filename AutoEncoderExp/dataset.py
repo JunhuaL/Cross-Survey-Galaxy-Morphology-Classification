@@ -56,18 +56,14 @@ class Galaxy10_Dataset(LightningDataModule):
         images = torch.from_numpy(images)
         labels = torch.from_numpy(labels)
         X_train, X_test, y_train, y_test = train_test_split(images,labels, test_size = 0.2)
-        # X_train, y_train = getBalanceDataset(X_train,y_train,None,['colorjitter','rotation','gauss_noise'])
+        X_train, y_train = getBalanceDataset(X_train,y_train,self.dataCount,['colorjitter','rotation','gauss_noise'])
 
-        print(X_train.size())
+        print(f'train dataset size is {X_train.size()}')
         print(y_train.size())
         
         X_train, X_valid, y_train, y_valid = train_test_split(X_train,y_train, test_size = 0.1)
 
         print(f'validation data size is {X_valid.size()}')
-
-
-        # X_train, y_train = getBalanceDataset(X_train,y_train,int(self.dataCount*0.9),['colorjitter','rotation','gauss_noise'])
-
 
         print(X_train.shape)
         print(y_train.shape)
@@ -127,8 +123,8 @@ class GalaxyZooUnlabbel_dataset(LightningDataModule):
 
 t2np = lambda t: t.detach().cpu().numpy()
 def getBalanceDataset(X,y,dataCount,transforms_list):
-    # X = t2np(X)
-    # y = t2np(y)
+    X = t2np(X)
+    y = t2np(y)
     data_aug = transforms.Compose([transforms_dict[transform] for transform in transforms_list])
     
     if(len(y.shape) == 2):
@@ -165,14 +161,14 @@ def getBalanceDataset(X,y,dataCount,transforms_list):
         up_sampled_imgs.append(up_sample)
         up_sampled_labels.append(up_sample_labels)
         
-    up_sampled_imgs = torch.from_numpy(np.concatenate(up_sampled_imgs)).cuda()
-    up_sampled_labels = torch.from_numpy(np.concatenate(up_sampled_labels)).cuda()
-    up_sampled_imgs = torch.from_numpy(np.array([t2np(data_aug(img)) for img in up_sampled_imgs])).cuda()
+    up_sampled_imgs = torch.from_numpy(np.concatenate(up_sampled_imgs))
+    up_sampled_labels = torch.from_numpy(np.concatenate(up_sampled_labels))
+    up_sampled_imgs = torch.from_numpy(np.array([t2np(data_aug(img)) for img in up_sampled_imgs]))
     
     X_balanced = np.array(X_balanced)
     y_balanced = np.array(y_balanced)
     y_balanced = np.eye(10)[y_balanced]
-    # X_balanced = torch.from_numpy(X_balanced).cuda()
-    # y_balanced = torch.from_numpy(y_balanced).cuda()
+    X_balanced = torch.from_numpy(X_balanced)
+    y_balanced = torch.from_numpy(y_balanced)
     
     return torch.cat((X_balanced,up_sampled_imgs),0), torch.cat((y_balanced,up_sampled_labels),0)
