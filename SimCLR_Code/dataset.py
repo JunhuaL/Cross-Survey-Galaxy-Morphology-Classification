@@ -25,9 +25,9 @@ class GaussianNoise:
     
 
 transforms_dict = {'crop+resize': transforms.RandomApply([transforms.RandomResizedCrop(size=96)],p=0.5),
-                   'colorjitter': transforms.ColorJitter(brightness=0.5,contrast=0.5,saturation=0.5,hue=0.1),
+                   'colorjitter': transforms.ColorJitter(brightness=[0.8,1],contrast=0.5,saturation=0.5,hue=0.1),
                    'gray': transforms.RandomApply([transforms.RandomGrayscale(p=0.2)],p=0.5),
-                   'blur': transforms.RandomApply([transforms.GaussianBlur(kernel_size=9)],p=0.5),
+                   'blur': transforms.GaussianBlur(kernel_size=9),
                    'rotation': transforms.RandomRotation(degrees=(0,360)),
                    'gauss_noise': transforms.RandomApply([GaussianNoise(mean=0, std=0.05)],p=0.5)}
 
@@ -51,13 +51,13 @@ class Galaxy10_Dataset(LightningDataModule):
         labels = np.eye(10)[labels]
         labels = labels.astype(np.float16, copy=False)
         images = images.astype(np.float16, copy=False)
-        images = images/255
+        images /= 255
         images = images.transpose((0,3,1,2))
 
         images = torch.from_numpy(images).share_memory_()
         labels = torch.from_numpy(labels).share_memory_()
         X_train, X_test, y_train, y_test = train_test_split(images,labels, test_size = 0.2)
-        # X_train, y_train = getBalanceDataset(X_train,y_train,self.dataCount,['colorjitter','rotation','gauss_noise'])
+        X_train, y_train = getBalanceDataset(X_train,y_train,self.dataCount,['colorjitter','rotation','gauss_noise'])
         X_train, X_valid, y_train, y_valid = train_test_split(X_train,y_train, test_size = 0.1)
 
         self.train = TensorDataset(X_train,y_train)

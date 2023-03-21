@@ -79,9 +79,9 @@ if __name__ == '__main__':
     
     lin_Eval = LightningDSModel(3,1024,encoder_model_file,10,True,0.001)
 
-    earlystopping_tracking = 'val_loss'
-    earlystopping_mode = 'min'
-    earlystopping_min_delta = 0.0001
+    earlystopping_tracking = 'val_f1'
+    earlystopping_mode = 'max'
+    earlystopping_min_delta = 0.001
 
     checkpoint_callback = pl_callbacks.ModelCheckpoint(dirpath=save_model_folder,
                                                        mode = earlystopping_mode,
@@ -120,9 +120,9 @@ if __name__ == '__main__':
     
     fine_tuning = LightningDSModel(3,1024,encoder_model_file,10,False,0.001)
     
-    earlystopping_tracking = 'val_loss'
-    earlystopping_mode = 'min'
-    earlystopping_min_delta = 0.0001
+    earlystopping_tracking = 'val_f1'
+    earlystopping_mode = 'max'
+    earlystopping_min_delta = 0.001
 
     checkpoint_callback = pl_callbacks.ModelCheckpoint(dirpath=save_model_folder,
                                                        mode = earlystopping_mode,
@@ -153,3 +153,10 @@ if __name__ == '__main__':
         os.mkdir(model_file)
     model_file+=filename 
     t.save(fine_tuning.model.state_dict(),model_file)
+
+    ########################### Testing #####################################
+    fine_tuning = fine_tuning.load_from_checkpoint(checkpoint_callback.best_model_path,verbose=True)
+    fine_tuning.eval()
+
+    trainer.test(fine_tuning,datamodule=datamodule)
+
