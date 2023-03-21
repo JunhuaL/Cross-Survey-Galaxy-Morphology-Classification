@@ -57,7 +57,7 @@ class Galaxy10_Dataset(LightningDataModule):
         images = torch.from_numpy(images).share_memory_()
         labels = torch.from_numpy(labels).share_memory_()
         X_train, X_test, y_train, y_test = train_test_split(images,labels, test_size = 0.2)
-        X_train, y_train = getBalanceDataset(X_train,y_train,self.dataCount,['colorjitter','rotation','gauss_noise'])
+        #X_train, y_train = getBalanceDataset(X_train,y_train,self.dataCount,['colorjitter','rotation','gauss_noise'])
         X_train, X_valid, y_train, y_valid = train_test_split(X_train,y_train, test_size = 0.1)
 
         self.train = TensorDataset(X_train,y_train)
