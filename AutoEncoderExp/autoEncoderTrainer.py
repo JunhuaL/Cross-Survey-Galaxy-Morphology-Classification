@@ -65,9 +65,9 @@ if __name__ == '__main__':
     datamodule = Galaxy10_Dataset('Galaxy10_DECals.h5',batch_size = 8, dataNumPerClass=280)
     lin_Eval = DSModelLightning(10,latent_size,True,learning_rate,encoder_model_file)
 
-    earlystopping_tracking = 'val_loss'
-    earlystopping_mode = 'min'
-    earlystopping_min_delta = 0.0001
+    earlystopping_tracking = 'val_f1'
+    earlystopping_mode = 'max'
+    earlystopping_min_delta = 0.001
 
     checkpoint_callback = pl_callbacks.ModelCheckpoint(dirpath=save_model_folder,
                                                        mode = earlystopping_mode,
@@ -106,9 +106,9 @@ if __name__ == '__main__':
     
     fine_tuning = DSModelLightning(10,latent_size,False,learning_rate,None)
     
-    earlystopping_tracking = 'val_loss'
-    earlystopping_mode = 'min'
-    earlystopping_min_delta = 0.0001
+    earlystopping_tracking = 'val_f1'
+    earlystopping_mode = 'max'
+    earlystopping_min_delta = 0.001
 
     checkpoint_callback = pl_callbacks.ModelCheckpoint(dirpath=save_model_folder,
                                                        mode = earlystopping_mode,
@@ -139,3 +139,9 @@ if __name__ == '__main__':
         os.mkdir(model_file)
     model_file+=filename 
     torch.save(fine_tuning.model.state_dict(),model_file)    
+
+    ###################### TESTING ####################################################
+    fine_tuning = fine_tuning.load_from_checkpoint(checkpoint_callback.best_model_path,verbose=True)
+    fine_tuning.eval()
+    
+    trainer.test(fine_tuning,datamodule=datamodule)

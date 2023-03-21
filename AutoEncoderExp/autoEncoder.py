@@ -310,7 +310,7 @@ class DSModelLightning(LightningModule):
         perf_dict['Macro_Acc'] = balanced_accuracy_score(y_true,y_pred)
         perf_dict['loss'] = loss
         self.log('val_perf',perf_dict)
-        self.log('val_loss',loss)
+        self.log('val_f1',perf_dict['Macro_F1'])
         print("\nepoch_valid:Ep%d || Loss:%.03f Macro Accuracy:%.03f Micro Accuracy:%.03f Macro F1:%.03f Micro F1:%.03f\n"%
               (epoch,loss,perf_dict['Macro_Acc'],perf_dict['Micro_Acc'],perf_dict['Macro_F1'],perf_dict['Micro_F1']))
 
