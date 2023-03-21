@@ -62,7 +62,7 @@ if __name__ == '__main__':
     #   LINEAR EVALUATION
     ##########################################################################
     
-    datamodule = Galaxy10_Dataset('Galaxy10.h5',dataNumPerClass=None)
+    datamodule = Galaxy10_Dataset('Galaxy10.h5',dataNumPerClass=334)
     lin_Eval = DSModelLightning(10,latent_size,True,learning_rate,encoder_model_file)
 
     earlystopping_tracking = 'val_loss'

@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 from pytorch_lightning import LightningModule
 from resNet18 import ResNet_18
-from sklearn.metrics import (accuracy_score,f1_score,auc,precision_recall_curve,roc_curve)
+from sklearn.metrics import (balanced_accuracy_score, accuracy_score,f1_score,auc,precision_recall_curve,roc_curve)
 import torch.optim as optim 
 
 
@@ -276,10 +276,6 @@ class DSModelLightning(LightningModule):
         return return_dict
 
     def training_epoch_end(self, outputs):
-
-        sch = self.lr_schedulers()
-        sch.step()
-
         epoch = self.current_epoch
         y_out = np.concatenate([x['y_out'] for x in outputs])
         y = np.concatenate([x['y'] for x in outputs])
@@ -288,11 +284,14 @@ class DSModelLightning(LightningModule):
         y_pred = y_out.argmax(axis=1)
         y_true = y.argmax(axis=1)
         perf_dict = {}
-        perf_dict['F1']  = f1_score(y_true,y_pred,average='macro')
-        perf_dict['Acc']  = accuracy_score(y_true,y_pred)
+        perf_dict['Micro_F1'] = f1_score(y_true,y_pred,average='micro')
+        perf_dict['Macro_F1']  = f1_score(y_true,y_pred,average='macro')
+        perf_dict['Micro_Acc']  = accuracy_score(y_true,y_pred)
+        perf_dict['Macro_Acc'] = balanced_accuracy_score(y_true,y_pred)
         perf_dict['loss'] = loss
         self.log('trn_perf',perf_dict)
-        print("\nepoch_trn:Ep%d || Loss:%.03f Accuracy:%.03f F1:%.03f\n"%(epoch,loss,perf_dict['Acc'],perf_dict['F1']))
+        print("\nepoch_train:Ep%d || Loss:%.03f Macro Accuracy:%.03f Micro Accuracy:%.03f Macro F1:%.03f Micro F1:%.03f\n"%
+              (epoch,loss,perf_dict['Macro_Acc'],perf_dict['Micro_Acc'],perf_dict['Macro_F1'],perf_dict['Micro_F1']))
 
     def validation_epoch_end(self, outputs):
         epoch = self.current_epoch
@@ -303,12 +302,15 @@ class DSModelLightning(LightningModule):
         y_pred = y_out.argmax(axis=1)
         y_true = y.argmax(axis=1)
         perf_dict = {}
-        perf_dict['F1']  = f1_score(y_true,y_pred,average='macro')
-        perf_dict['Acc']  = accuracy_score(y_true,y_pred)
+        perf_dict['Micro_F1'] = f1_score(y_true,y_pred,average='micro')
+        perf_dict['Macro_F1']  = f1_score(y_true,y_pred,average='macro')
+        perf_dict['Micro_Acc']  = accuracy_score(y_true,y_pred)
+        perf_dict['Macro_Acc'] = balanced_accuracy_score(y_true,y_pred)
         perf_dict['loss'] = loss
         self.log('val_perf',perf_dict)
         self.log('val_loss',loss)
-        print("\nepoch_val:Ep%d || Loss:%.03f Accuracy:%.03f F1:%.03f\n"%(epoch,loss,perf_dict['Acc'],perf_dict['F1']))
+        print("\nepoch_valid:Ep%d || Loss:%.03f Macro Accuracy:%.03f Micro Accuracy:%.03f Macro F1:%.03f Micro F1:%.03f\n"%
+              (epoch,loss,perf_dict['Macro_Acc'],perf_dict['Micro_Acc'],perf_dict['Macro_F1'],perf_dict['Micro_F1']))
 
     def test_epoch_end(self, outputs):
         epoch = self.current_epoch
@@ -319,11 +321,14 @@ class DSModelLightning(LightningModule):
         y_pred = y_out.argmax(axis=1)
         y_true = y.argmax(axis=1)
         perf_dict = {}
-        perf_dict['F1']  = f1_score(y_true,y_pred,average='macro')
-        perf_dict['Acc']  = accuracy_score(y_true,y_pred)
+        perf_dict['Micro_F1'] = f1_score(y_true,y_pred,average='micro')
+        perf_dict['Macro_F1']  = f1_score(y_true,y_pred,average='macro')
+        perf_dict['Micro_Acc']  = accuracy_score(y_true,y_pred)
+        perf_dict['Macro_Acc'] = balanced_accuracy_score(y_true,y_pred)
         perf_dict['loss'] = loss
         self.log('test_perf',perf_dict)
-        print("\nepoch_tst:Ep%d || Loss:%.03f Accuracy:%.03f F1:%.03f\n"%(epoch,loss,perf_dict['Acc'],perf_dict['F1']))
+        print("\nepoch_tst:Ep%d || Loss:%.03f Macro Accuracy:%.03f Micro Accuracy:%.03f Macro F1:%.03f Micro F1:%.03f\n"%
+              (epoch,loss,perf_dict['Macro_Acc'],perf_dict['Micro_Acc'],perf_dict['Macro_F1'],perf_dict['Micro_F1']))
         
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.model.parameters(),lr=self.lr)
