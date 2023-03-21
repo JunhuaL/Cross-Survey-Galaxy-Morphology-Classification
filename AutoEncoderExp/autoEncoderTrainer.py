@@ -20,8 +20,8 @@ if __name__ == '__main__':
     root_folder = 'outputs/'
     save_model_folder = root_folder + 'models/'
 
-    datamodule = GalaxyZooUnlabbel_dataset('dataset_final.pt')
-    model = AutoencoderLightning(latent_size, lr = learning_rate)
+    # datamodule = GalaxyZooUnlabbel_dataset('dataset_final.pt')
+    # model = AutoencoderLightning(latent_size, lr = learning_rate)
 
     earlystopping_tracking = 'trn_mse_loss'
     earlystopping_mode = 'min'
@@ -37,18 +37,18 @@ if __name__ == '__main__':
                                         min_delta=earlystopping_min_delta,
                                         patience=10,)
 
-    trainer = Trainer(
-        gpus=[0,],
-        accelerator = None,
-        max_epochs = 20, min_epochs = 5,
-        default_root_dir = root_folder,
-        fast_dev_run=False,
-        check_val_every_n_epoch=1,
-        callbacks=  [checkpoint_callback,
-                                earlystop_callback,],
-    )
+    # trainer = Trainer(
+    #     gpus=[0,],
+    #     accelerator = None,
+    #     max_epochs = 5, min_epochs = 5,
+    #     default_root_dir = root_folder,
+    #     fast_dev_run=False,
+    #     check_val_every_n_epoch=1,
+    #     callbacks=  [checkpoint_callback,
+    #                             earlystop_callback,],
+    # )
 
-    trainer.fit(model, datamodule = datamodule)
+    # trainer.fit(model, datamodule = datamodule)
 
     encoder_model_file = save_model_folder+'encoder/'
     model_filename = f'autoencoder_{latent_size}.pt'
@@ -56,13 +56,13 @@ if __name__ == '__main__':
         os.mkdir(encoder_model_file)
     encoder_model_file += model_filename
 
-    torch.save(model.model.state_dict(), encoder_model_file)
+    # torch.save(model.model.state_dict(), encoder_model_file)
     
     ##########################################################################
     #   LINEAR EVALUATION
     ##########################################################################
     
-    datamodule = Galaxy10_Dataset('Galaxy10.h5',dataNumPerClass=334)
+    datamodule = Galaxy10_Dataset('Galaxy10_DECals.h5',batch_size = 8, dataNumPerClass=280)
     lin_Eval = DSModelLightning(10,latent_size,True,learning_rate,encoder_model_file)
 
     earlystopping_tracking = 'val_loss'
