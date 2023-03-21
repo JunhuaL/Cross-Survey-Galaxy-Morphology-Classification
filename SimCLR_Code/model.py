@@ -143,7 +143,7 @@ class SimCLR_container(LightningModule):
 
     def forward(self, batch):
         x, y = batch
-        x = x.float() / 255
+        x = x.float() /255
         x1 = self.contrast_transforms(x)
         x2 = self.contrast_transforms(x)
         x1 = self.model(x1)
@@ -288,7 +288,7 @@ class LightningDSModel(LightningModule):
         perf_dict['Macro_Acc'] = balanced_accuracy_score(y_true,y_pred)
         perf_dict['loss'] = loss
         self.log('trn_perf',perf_dict)
-        print("\nepoch_tst:Ep%d || Loss:%.03f Macro Accuracy:%.03f Micro Accuracy:%.03f Macro F1:%.03f Micro F1:%.03f\n"%
+        print("\nepoch_trn:Ep%d || Loss:%.03f Macro Accuracy:%.03f Micro Accuracy:%.03f Macro F1:%.03f Micro F1:%.03f\n"%
               (epoch,loss,perf_dict['Macro_Acc'],perf_dict['Micro_Acc'],perf_dict['Macro_F1'],perf_dict['Micro_F1']))
 
     def validation_epoch_end(self, outputs):
@@ -306,8 +306,8 @@ class LightningDSModel(LightningModule):
         perf_dict['Macro_Acc'] = balanced_accuracy_score(y_true,y_pred)
         perf_dict['loss'] = loss
         self.log('val_perf',perf_dict)
-        self.log('val_loss',loss)
-        print("\nepoch_tst:Ep%d || Loss:%.03f Macro Accuracy:%.03f Micro Accuracy:%.03f Macro F1:%.03f Micro F1:%.03f\n"%
+        self.log('val_f1',perf_dict['Macro_F1'])
+        print("\nepoch_val:Ep%d || Loss:%.03f Macro Accuracy:%.03f Micro Accuracy:%.03f Macro F1:%.03f Micro F1:%.03f\n"%
               (epoch,loss,perf_dict['Macro_Acc'],perf_dict['Micro_Acc'],perf_dict['Macro_F1'],perf_dict['Micro_F1']))
 
     def test_epoch_end(self, outputs):
