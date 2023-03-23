@@ -246,6 +246,7 @@ class LightningDSModel(LightningModule):
     
     def forward(self, data):
         x,y = data
+        x = x.float() /255
         return self.model(x)
     
     def training_step(self,data,batch_idx):
@@ -330,5 +331,6 @@ class LightningDSModel(LightningModule):
         
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.model.parameters(),lr=self.lr)
-        return optimizer
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, 40, eta_min = 1e-08)
+        return [optimizer], [scheduler]
 

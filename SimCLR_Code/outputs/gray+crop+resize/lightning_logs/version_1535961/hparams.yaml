@@ -1,6 +1,0 @@
-encoder_output_num: 1024
-encoder_param_dir: null
-image_channels: 3
-linEval: false
-lr: 0.001
-num_classes: 10

@@ -32,10 +32,11 @@ transforms_dict = {'crop+resize': transforms.RandomApply([transforms.RandomResiz
                    'gauss_noise': transforms.RandomApply([GaussianNoise(mean=0, std=0.05)],p=0.5)}
 
 class Galaxy10_Dataset(LightningDataModule):
-    def __init__(self,datadir,batch_size = 32,dataNumPerClass = None):
+    def __init__(self,datadir,batch_size = 32,dataNumPerClass = None,use_balance = False):
         super(Galaxy10_Dataset).__init__()
         self.file_path = datadir
         self.batch_size = batch_size
+        self.use_balance = use_balance
         self.prepare_data_per_node = False
         self._log_hyperparams = True
         self.dataCount = dataNumPerClass
@@ -49,17 +50,37 @@ class Galaxy10_Dataset(LightningDataModule):
             labels = np.array(F['ans'])
         
         labels = np.eye(10)[labels]
-        labels = labels.astype(np.float16, copy=False)
-        images = images.astype(np.float16, copy=False)
-        images /= 255
+        #labels = labels.astype(np.float16, copy=False)
+        #images = images.astype(np.float16, copy=False)
+        #images /= 255
         images = images.transpose((0,3,1,2))
 
         images = torch.from_numpy(images).share_memory_()
         labels = torch.from_numpy(labels).share_memory_()
         X_train, X_test, y_train, y_test = train_test_split(images,labels, test_size = 0.2)
-        #X_train, y_train = getBalanceDataset(X_train,y_train,self.dataCount,['colorjitter','rotation','gauss_noise'])
-        X_train, X_valid, y_train, y_valid = train_test_split(X_train,y_train, test_size = 0.1)
 
+        if self.use_balance:
+            X_train, y_train = getBalanceDataset(X_train, y_train, self.dataCount, ['colorjitter','rotation','gauss_noise'])
+            train_images = t2np(X_train)
+            train_labels = t2np(y_train)
+            train_labels = train_labels.argmax(axis=1)
+            labels = np.unique(train_labels)
+            X_train ,y_train,X_valid,y_valid = [],[],[],[]
+            for label in labels:
+                data_split = train_test_split(train_images[train_labels==label],train_labels[train_labels==label],test_size=0.1)
+                X_train.append(data_split[0])
+                X_valid.append(data_split[1])
+                y_train.append(np.eye(10)[data_split[2]])
+                y_valid.append(np.eye(10)[data_split[3]])
+            X_train = torch.from_numpy(np.concatenate(X_train)).share_memory_()
+            y_train = torch.from_numpy(np.concatenate(y_train)).share_memory_()
+            X_valid = torch.from_numpy(np.concatenate(X_valid)).share_memory_()
+            y_valid = torch.from_numpy(np.concatenate(y_valid)).share_memory_()
+        else:
+            X_train,X_valid,y_train,y_valid = train_test_split(X_train,y_train,test_size=0.1)
+        #X_train, y_train = getBalanceDataset(X_train,y_train,self.dataCount,['colorjitter','rotation','gauss_noise'])
+        #X_train, X_valid, y_train, y_valid = train_test_split(X_train,y_train, test_size = 0.1)
+        print(X_train.shape,X_valid.shape)
         self.train = TensorDataset(X_train,y_train)
         self.valid = TensorDataset(X_valid,y_valid)
         self.test = TensorDataset(X_test,y_test)
@@ -138,7 +159,6 @@ def getBalanceDataset(X,y,dataCount,transforms_list):
             y_balanced.append(label)
             
             dataCountDic[label] = dataCountDic[label] - 1
-    
     up_sampled_imgs = []
     up_sampled_labels = []
     for i,quota in enumerate(dataCountDic):
