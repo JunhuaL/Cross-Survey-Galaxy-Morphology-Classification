@@ -1,6 +1,0 @@
-encoder_output_num: 1024
-encoder_param_dir: outputs/final/gauss_noise+crop+resize+crop+resize/models/encoder/simCLR.gauss_noise.crop+resize.crop+resize.pt
-image_channels: 3
-linEval: true
-lr: 0.001
-num_classes: 10

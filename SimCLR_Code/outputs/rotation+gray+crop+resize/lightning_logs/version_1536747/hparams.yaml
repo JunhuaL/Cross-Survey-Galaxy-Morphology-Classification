@@ -1,6 +1,0 @@
-image_channels: 3
-encoder_output_num: 1024
-encoder_param_dir: outputs/rotation+gray+crop+resize/models/encoder/simCLR.rotation.gray.crop+resize.pt
-num_classes: 10
-linEval: false
-lr: 0.001
