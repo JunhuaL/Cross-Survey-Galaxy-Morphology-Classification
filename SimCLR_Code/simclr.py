@@ -69,11 +69,11 @@ if __name__ == '__main__':
     ##########################################################################
 
     # Change none to number of data per class
-    datamodule = Galaxy10_Dataset('Galaxy10.h5',None)
-    # datamodule = Galaxy10_Dataset('Galaxy10.h5',40)
-    # datamodule = Galaxy10_Dataset('Galaxy10.h5',4)
-    # datamodule = Galaxy10_Dataset('Galaxy10_DECals.h5',None)
-    # datamodule = Galaxy10_Dataset('Galaxy10_DECals.h5',334)
+    # datamodule = Galaxy10_Dataset('Galaxy10.h5',dataNumPerClass = None, use_balance=True)
+    # datamodule = Galaxy10_Dataset('Galaxy10.h5', dataNumPerClass=40, use_balance=True)
+    # datamodule = Galaxy10_Dataset('Galaxy10.h5',dataNumPerClass = 4, use_balance=True)
+    # datamodule = Galaxy10_Dataset('Galaxy10_DECals.h5',dataNumPerClass = None, use_balance=False)
+    datamodule = Galaxy10_Dataset('Galaxy10_DECals.h5',dataNumPerClass = None, use_balance=False)
     # datamodule = Galaxy10_Dataset('Galaxy10_DECals.h5',33)
     # datamodule = Galaxy10_Dataset('Galaxy10_DECals.h5',3)
     

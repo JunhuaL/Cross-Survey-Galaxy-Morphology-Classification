@@ -4,7 +4,6 @@ import keras
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten
 from keras.layers import Conv2D, MaxPooling2D
-from tensorflow.keras.utils import to_categorical
 from keras.preprocessing import image
 import numpy as np
 import pandas as pd
@@ -12,19 +11,19 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+import h5py
 
-
-
-images, labels = galaxy10.load_data()
-labels = labels.astype(np.float32)
-labels = to_categorical(labels)
-images = images.astype(np.float32)
-images = images/255
+with h5py.File('Galaxy10_DECals.h5', 'r') as F:
+    images = np.array(F['images'])
+    labels = np.array(F['ans'])
+labels = np.eye(10)[labels]
+images = images.astype(np.float32,copy=False)
+images /= 255
      
 X_train, X_test, y_train, y_test = train_test_split(images, labels, test_size = 0.15)
 
 model = Sequential()
-model.add(Conv2D(32, kernel_size=(3,3),activation='relu',input_shape=(69,69,3)))
+model.add(Conv2D(32, kernel_size=(3,3),activation='relu',input_shape=(256,256,3)))
 model.add(Conv2D(64, (3, 3), activation='relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Conv2D(64, (3, 3), activation='relu'))
