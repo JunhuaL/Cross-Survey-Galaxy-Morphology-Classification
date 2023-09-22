@@ -2,7 +2,7 @@
 
 ## What is this?
 
-Python code for classifying galaxies according to their morphology in a self-supervised manner. This code implements the machine learning pipeline we proposed in [Self-Supervised Learning for Cross-Survey Galaxy Morphology Classification]().
+Python code for classifying galaxies according to their morphology in a self-supervised manner. This code implements the machine learning pipeline we proposed in [Self-Supervised Learning for Cross-Survey Galaxy Morphology Classification](https://github.com/JunhuaL/MLP_G036/blob/main/Final_Report.pdf).
 
 ## Why combine galaxy morphology classification with self-supervised learning?
 
